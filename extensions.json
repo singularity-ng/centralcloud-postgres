@@ -140,7 +140,116 @@
       "category": "development",
       "enabled_by_default": false,
       "notes": "Static analysis and runtime checks for PL/pgSQL."
+    },
+    {
+      "name": "pg_trgm",
+      "package": "postgresql_18",
+      "control_file": "pg_trgm.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
+      "category": "search",
+      "enabled_by_default": false,
+      "notes": "Core contrib trigram indexes and fuzzy text matching."
+    },
+    {
+      "name": "unaccent",
+      "package": "postgresql_18",
+      "control_file": "unaccent.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS unaccent;",
+      "category": "search",
+      "enabled_by_default": false,
+      "notes": "Core contrib accent-insensitive text normalization."
+    },
+    {
+      "name": "btree_gin",
+      "package": "postgresql_18",
+      "control_file": "btree_gin.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS btree_gin;",
+      "category": "indexing",
+      "enabled_by_default": false,
+      "notes": "Core contrib B-tree operator classes for GIN indexes."
+    },
+    {
+      "name": "btree_gist",
+      "package": "postgresql_18",
+      "control_file": "btree_gist.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS btree_gist;",
+      "category": "indexing",
+      "enabled_by_default": false,
+      "notes": "Core contrib B-tree operator classes for GiST indexes."
+    },
+    {
+      "name": "pgstattuple",
+      "package": "postgresql_18",
+      "control_file": "pgstattuple.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pgstattuple;",
+      "category": "maintenance",
+      "enabled_by_default": false,
+      "notes": "Core contrib table and index bloat inspection."
+    },
+    {
+      "name": "amcheck",
+      "package": "postgresql_18",
+      "control_file": "amcheck.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS amcheck;",
+      "category": "maintenance",
+      "enabled_by_default": false,
+      "notes": "Core contrib index and relation corruption checks."
+    },
+    {
+      "name": "pageinspect",
+      "package": "postgresql_18",
+      "control_file": "pageinspect.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pageinspect;",
+      "category": "diagnostics",
+      "enabled_by_default": false,
+      "notes": "Core contrib low-level page inspection for incident debugging."
+    },
+    {
+      "name": "postgres_fdw",
+      "package": "postgresql_18",
+      "control_file": "postgres_fdw.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS postgres_fdw;",
+      "category": "federation",
+      "enabled_by_default": false,
+      "notes": "Core contrib foreign data wrapper for PostgreSQL-to-PostgreSQL access."
+    },
+    {
+      "name": "pgcrypto",
+      "package": "postgresql_18",
+      "control_file": "pgcrypto.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pgcrypto;",
+      "category": "security",
+      "enabled_by_default": false,
+      "notes": "Core contrib cryptographic helpers and random data functions."
+    },
+    {
+      "name": "pg_prewarm",
+      "package": "postgresql_18",
+      "control_file": "pg_prewarm.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_prewarm;",
+      "category": "operations",
+      "enabled_by_default": false,
+      "notes": "Core contrib cache warming for important tables and indexes."
+    },
+    {
+      "name": "pgaudit",
+      "package": "pgaudit",
+      "control_file": "pgaudit.control",
+      "shared_preload_libraries": ["pgaudit"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pgaudit;",
+      "category": "security",
+      "enabled_by_default": false,
+      "notes": "Detailed database audit logging. Preload and configure only where audit volume is acceptable."
     }
   ]
 }
-

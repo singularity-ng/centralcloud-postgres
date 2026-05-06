@@ -82,6 +82,8 @@ _: let
                   platforms = ["x86_64-linux"];
                 };
               };
+
+              pgaudit = oldAttrs.passthru.pkgs.callPackage ./pgaudit-pg18.nix {};
             };
         };
     });
@@ -102,6 +104,7 @@ _: let
       hypopg
       pg_hint_plan
       plpgsql_check
+      pgaudit
     ];
   extensionBundle = pkgs:
     pkgs.runCommand "postgresql-18-extension-bundle" {

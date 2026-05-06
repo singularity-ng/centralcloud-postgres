@@ -32,9 +32,24 @@ Included extension packages:
 - hypopg
 - pg_hint_plan
 - plpgsql_check
+- pg_trgm
+- unaccent
+- btree_gin
+- btree_gist
+- pgstattuple
+- amcheck
+- pageinspect
+- postgres_fdw
+- pgcrypto
+- pg_prewarm
+- pgaudit
 
 The packages make extensions available. Databases still choose their own
 `shared_preload_libraries` and `CREATE EXTENSION` list.
+
+The PostgreSQL base image also includes preloadable contrib modules such as
+`auto_explain`. These are verified by smoke tests but are not listed as SQL
+extensions because they do not have `CREATE EXTENSION` control files.
 
 ## Extension Matrix
 
@@ -58,6 +73,17 @@ This section is generated from `extensions.json`.
 | `hypopg` | `hypopg` | Yes | No | No | Hypothetical indexes for query planning. |
 | `pg_hint_plan` | `pg_hint_plan` | Yes | No | No | Planner hints for exceptional query tuning cases. |
 | `plpgsql_check` | `plpgsql_check` | Yes | No | No | Static analysis and runtime checks for PL/pgSQL. |
+| `pg_trgm` | `postgresql_18` | Yes | No | No | Core contrib trigram indexes and fuzzy text matching. |
+| `unaccent` | `postgresql_18` | Yes | No | No | Core contrib accent-insensitive text normalization. |
+| `btree_gin` | `postgresql_18` | Yes | No | No | Core contrib B-tree operator classes for GIN indexes. |
+| `btree_gist` | `postgresql_18` | Yes | No | No | Core contrib B-tree operator classes for GiST indexes. |
+| `pgstattuple` | `postgresql_18` | Yes | No | No | Core contrib table and index bloat inspection. |
+| `amcheck` | `postgresql_18` | Yes | No | No | Core contrib index and relation corruption checks. |
+| `pageinspect` | `postgresql_18` | Yes | No | No | Core contrib low-level page inspection for incident debugging. |
+| `postgres_fdw` | `postgresql_18` | Yes | No | No | Core contrib foreign data wrapper for PostgreSQL-to-PostgreSQL access. |
+| `pgcrypto` | `postgresql_18` | Yes | No | No | Core contrib cryptographic helpers and random data functions. |
+| `pg_prewarm` | `postgresql_18` | Yes | No | No | Core contrib cache warming for important tables and indexes. |
+| `pgaudit` | `pgaudit` | Yes | `pgaudit` | No | Detailed database audit logging. Preload and configure only where audit volume is acceptable. |
 
 <!-- extension-matrix:end -->
 
