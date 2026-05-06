@@ -1,0 +1,146 @@
+{
+  "postgresql_major": 18,
+  "extensions": [
+    {
+      "name": "timescaledb",
+      "package": "timescaledb",
+      "control_file": "timescaledb.control",
+      "shared_preload_libraries": ["timescaledb"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS timescaledb;",
+      "category": "time-series",
+      "enabled_by_default": false,
+      "notes": "Required only for databases using TimescaleDB hypertables or compression."
+    },
+    {
+      "name": "pg_stat_statements",
+      "package": "postgresql_18",
+      "control_file": "pg_stat_statements.control",
+      "shared_preload_libraries": ["pg_stat_statements"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;",
+      "category": "observability",
+      "enabled_by_default": false,
+      "notes": "Core contrib extension available from the PostgreSQL base image."
+    },
+    {
+      "name": "vector",
+      "package": "pgvector",
+      "control_file": "vector.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS vector;",
+      "category": "vector-search",
+      "enabled_by_default": false,
+      "notes": "Dense vector type and indexes."
+    },
+    {
+      "name": "vchord",
+      "package": "vectorchord",
+      "control_file": "vchord.control",
+      "shared_preload_libraries": ["vchord"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS vchord;",
+      "category": "vector-search",
+      "enabled_by_default": false,
+      "notes": "VectorChord indexing extension."
+    },
+    {
+      "name": "vchord_bm25",
+      "package": "vchord-bm25",
+      "control_file": "vchord_bm25.control",
+      "shared_preload_libraries": ["vchord_bm25"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS vchord_bm25 CASCADE;",
+      "category": "sparse-search",
+      "enabled_by_default": false,
+      "notes": "BM25 sparse ranking. Usually used with pg_tokenizer."
+    },
+    {
+      "name": "pg_tokenizer",
+      "package": "pg-tokenizer",
+      "control_file": "pg_tokenizer.control",
+      "shared_preload_libraries": ["pg_tokenizer"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_tokenizer;",
+      "category": "sparse-search",
+      "enabled_by_default": false,
+      "notes": "Tokenizer support for BM25 search."
+    },
+    {
+      "name": "age",
+      "package": "age",
+      "control_file": "age.control",
+      "shared_preload_libraries": ["age"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS age;",
+      "category": "graph",
+      "enabled_by_default": false,
+      "notes": "Apache AGE graph database extension."
+    },
+    {
+      "name": "pgmq",
+      "package": "pgmq",
+      "control_file": "pgmq.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pgmq;",
+      "category": "queue",
+      "enabled_by_default": false,
+      "notes": "Postgres-backed message queues."
+    },
+    {
+      "name": "pg_cron",
+      "package": "pg_cron",
+      "control_file": "pg_cron.control",
+      "shared_preload_libraries": ["pg_cron"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_cron;",
+      "category": "operations",
+      "enabled_by_default": false,
+      "notes": "Requires cron.database_name for the database that owns jobs."
+    },
+    {
+      "name": "pg_repack",
+      "package": "pg_repack",
+      "control_file": "pg_repack.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_repack;",
+      "category": "maintenance",
+      "enabled_by_default": false,
+      "notes": "Online table and index reorganization."
+    },
+    {
+      "name": "pg_partman",
+      "package": "pg_partman",
+      "control_file": "pg_partman.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_partman;",
+      "category": "partitioning",
+      "enabled_by_default": false,
+      "notes": "Partition management extension."
+    },
+    {
+      "name": "hypopg",
+      "package": "hypopg",
+      "control_file": "hypopg.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS hypopg;",
+      "category": "planning",
+      "enabled_by_default": false,
+      "notes": "Hypothetical indexes for query planning."
+    },
+    {
+      "name": "pg_hint_plan",
+      "package": "pg_hint_plan",
+      "control_file": "pg_hint_plan.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_hint_plan;",
+      "category": "planning",
+      "enabled_by_default": false,
+      "notes": "Planner hints for exceptional query tuning cases."
+    },
+    {
+      "name": "plpgsql_check",
+      "package": "plpgsql_check",
+      "control_file": "plpgsql_check.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS plpgsql_check;",
+      "category": "development",
+      "enabled_by_default": false,
+      "notes": "Static analysis and runtime checks for PL/pgSQL."
+    }
+  ]
+}
+

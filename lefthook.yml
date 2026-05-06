@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    alejandra:
+      glob: "*.nix"
+      run: alejandra --check {staged_files}
+    statix:
+      glob: "*.nix"
+      run: statix check .
+    deadnix:
+      glob: "*.nix"
+      run: deadnix flake.nix nix
+    extension-docs:
+      glob: "{README.md,extensions.json,scripts/generate-extension-docs.py}"
+      run: ./scripts/generate-extension-docs.py --check

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 2,
+  "mediaType": "application/vnd.oci.image.manifest.v1+json",
+  "config": {
+    "mediaType": "application/vnd.oci.image.config.v1+json",
+    "digest": "sha256:7e1b89105c8d66d65566b8493a3ea7f38c111366e1eac5a701b90673483bcd7f",
+    "size": 6409
+  },
+  "layers": [
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:34f0642d22440b5813561cd4375937013bfb556bec8ff3b0e208699b786282a7",
+      "size": 30258379
+    },
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:0ce0cb1812c0050b849b0bbfa9e32715a3a4f1a395144612162434b4967a80e4",
+      "size": 48917885
+    },
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:232a8d740e4ee4f12e0d4cbe3133f70f4c694d3c45273e1e8d2d71717c26b64c",
+      "size": 633
+    },
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:cebbaf0c6efee6534d8cad14cb1137c0cf5dafdcc4e841c2d68b21856891a95c",
+      "size": 125765777
+    },
+    {
+      "mediaType": "application/vnd.oci.image.layer.v1.tar+gzip",
+      "digest": "sha256:4a9ece102471116bf8341d3c0cf6f9afd7a2321a7b2a09d1a7d5c05bc3c2bf99",
+      "size": 50065743
+    }
+  ],
+  "annotations": {
+    "org.opencontainers.image.authors": "The CloudNativePG Contributors",
+    "org.opencontainers.image.base.digest": "sha256:4333240150a6924f878e05ec2c998aec95238010e0e4d2fec6161c90128c4652",
+    "org.opencontainers.image.base.name": "docker.io/library/debian:bullseye-slim",
+    "org.opencontainers.image.created": "2026-04-27T08:53:53Z",
+    "org.opencontainers.image.description": "A system PostgreSQL 18.3 container image",
+    "org.opencontainers.image.documentation": "https://github.com/cloudnative-pg/postgres-containers",
+    "org.opencontainers.image.licenses": "Apache-2.0",
+    "org.opencontainers.image.revision": "374ed9059986445fc92630247d288e163b2f8b30",
+    "org.opencontainers.image.source": "https://github.com/cloudnative-pg/postgres-containers",
+    "org.opencontainers.image.title": "CloudNativePG PostgreSQL 18.3 system",
+    "org.opencontainers.image.url": "https://github.com/cloudnative-pg/postgres-containers",
+    "org.opencontainers.image.vendor": "The CloudNativePG Contributors",
+    "org.opencontainers.image.version": "18.3"
+  }
+}

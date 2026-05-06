@@ -1,0 +1,20 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: timescale-postgres
+spec:
+  instances: 3
+  imageName: ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext
+  postgresql:
+    shared_preload_libraries:
+      - timescaledb
+    parameters:
+      pg_stat_statements.track: all
+  bootstrap:
+    initdb:
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS timescaledb;
+        - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+  storage:
+    size: 100Gi
+
