@@ -50,7 +50,7 @@
           else "amd64";
         cnpgBase = n2c.pullImageFromManifest {
           imageName = "cloudnative-pg/postgresql";
-          imageTag = "18.3";
+          imageTag = "18.3-system-trixie";
           imageManifest = ./images/postgres18-cnpg/cnpg-postgresql-18.3-amd64-manifest.json;
           registryUrl = "ghcr.io";
           os = "linux";
@@ -76,7 +76,7 @@
               "org.opencontainers.image.description" = "CloudNativePG PostgreSQL 18 image with TimescaleDB, vector, BM25, AGE, and operations extensions";
               "org.opencontainers.image.source" = "https://github.com/singularity-ng/centralcloud-postgres";
               "org.opencontainers.image.licenses" = "MIT";
-              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.3";
+              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie";
             };
           };
         };
