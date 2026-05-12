@@ -30,7 +30,7 @@ push-cnpg-image:
 
 sbom:
     mkdir -p dist
-    syft ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
+    syft registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
 
 install-hooks:
     lefthook install

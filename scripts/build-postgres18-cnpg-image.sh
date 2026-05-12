@@ -16,5 +16,5 @@ else
   nix run "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image.copyToDockerDaemon"
 fi
 
-./scripts/smoke-image.sh ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext
-echo "ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext"
+./scripts/smoke-image.sh registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext
+echo "registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext"

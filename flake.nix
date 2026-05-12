@@ -58,7 +58,7 @@
         };
         extensionRoot = postgres18.cnpgExtensionRoot pkgs;
         cnpgImage = n2c.buildImage {
-          name = "ghcr.io/singularity-ng/centralcloud-postgres";
+          name = "registry.infra.centralcloud.com/centralcloud/centralcloud-postgres";
           tag = "18-cnpg-ext";
           fromImage = cnpgBase;
           inherit arch;
@@ -74,7 +74,7 @@
             Labels = {
               "org.opencontainers.image.title" = "CentralCloud PostgreSQL 18 CNPG Extensions";
               "org.opencontainers.image.description" = "CloudNativePG PostgreSQL 18 image with TimescaleDB, vector, BM25, AGE, and operations extensions";
-              "org.opencontainers.image.source" = "https://github.com/singularity-ng/centralcloud-postgres";
+              "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/centralcloud/centralcloud-postgres";
               "org.opencontainers.image.licenses" = "MIT";
               "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie";
             };
