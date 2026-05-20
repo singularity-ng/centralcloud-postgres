@@ -104,6 +104,7 @@ _: let
       hypopg
       pg_hint_plan
       plpgsql_check
+      rum
       pgaudit
     ];
   extensionBundle = pkgs:
@@ -130,8 +131,34 @@ in {
 
   cnpgExtensionRoot = pkgs: let
     bundle = extensionBundle pkgs;
+    deb = url: hash:
+      pkgs.fetchurl {
+        inherit url hash;
+      };
+    debianPlpythonPackages = [
+      (deb
+        "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-plpython3-18_18.3-1.pgdg13%2b1_amd64.deb"
+        "sha256-UF1vVTy7hUxZ4B3Vx6Oo6pKrFZ9YRw2isRaksrP45lw=")
+      (deb
+        "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13_3.13.5-2%2bdeb13u2_amd64.deb"
+        "sha256-eS0OXipxP/TRXWWOYurPNJ7AhU7TKc7LFYRYttNEm2s=")
+      (deb
+        "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13-stdlib_3.13.5-2%2bdeb13u2_amd64.deb"
+        "sha256-V/91n9rYxaocyb/dJfa9eGLg5YVMl+c5EFB0p7x6vCM=")
+      (deb
+        "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13-minimal_3.13.5-2%2bdeb13u2_amd64.deb"
+        "sha256-8ZZDOk7vbX9OcNRXYcWOxqWeeYK59oPUUtxoOAI1UcU=")
+      (deb
+        "http://deb.debian.org/debian/pool/main/p/python3.13/python3.13_3.13.5-2%2bdeb13u2_amd64.deb"
+        "sha256-iC5Cj6EI335I7Wfu0If2W2A8VMC6mdCaIwc5ZvR8O4s=")
+      (deb
+        "http://deb.debian.org/debian/pool/main/p/python3.13/python3.13-minimal_3.13.5-2%2bdeb13u2_amd64.deb"
+        "sha256-9ZXsiiST4V6s8N0VAgV3gs570cw0Rkc9vMicNCgkYtY=")
+    ];
   in
-    pkgs.runCommand "postgresql-18-cnpg-extension-root" {} ''
+    pkgs.runCommand "postgresql-18-cnpg-extension-root" {
+      nativeBuildInputs = [pkgs.dpkg pkgs.patchelf];
+    } ''
       mkdir -p "$out/usr/lib/postgresql/18/lib" "$out/usr/share/postgresql/18/extension"
       cp -R --no-preserve=mode,ownership "${bundle}/lib/." \
         "$out/usr/lib/postgresql/18/lib/"
@@ -139,6 +166,19 @@ in {
         "$out/usr/share/postgresql/18/extension/"
       cp "${bundle}/extensions.json" \
         "$out/usr/share/postgresql/18/extension/centralcloud-extensions.json"
+
+      for deb in ${pkgs.lib.escapeShellArgs debianPlpythonPackages}; do
+        dpkg-deb -x "$deb" "$out"
+      done
+
+      # The CNPG base image already ships PostgreSQL and libpq. Extensions
+      # copied from Nix must not keep Nix-store RPATHs to libpq/glibc, or the
+      # Debian runtime can fail loading them when glibc versions diverge.
+      for so in "$out"/usr/lib/postgresql/18/lib/*.so; do
+        if patchelf --print-rpath "$so" >/dev/null 2>&1; then
+          patchelf --remove-rpath "$so" || true
+        fi
+      done
     '';
 
   extensionClosure = pkgs:
