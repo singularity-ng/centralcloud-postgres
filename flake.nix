@@ -13,7 +13,7 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nix2container = {
       url = "github:nlewo/nix2container";
       inputs.nixpkgs.follows = "nixpkgs";
