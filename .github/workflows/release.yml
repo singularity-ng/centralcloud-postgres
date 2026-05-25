@@ -1,5 +1,5 @@
 # Release is handled by Forgejo CI (.forgejo/workflows/release.yml).
-# Image is published to registry.infra.centralcloud.com/centralcloud/centralcloud-postgres
+# Image is published to git.infra.centralcloud.com/centralcloud/centralcloud-postgres
 # This file is kept as a placeholder so GitHub mirror PRs don't show a missing workflow.
 name: Release (disabled — see Forgejo)
 on:

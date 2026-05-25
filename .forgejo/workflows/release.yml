@@ -3,7 +3,7 @@
 # fresh in both the internal registry and the GHCR public mirror.
 #
 # Produces (same digest in both):
-#   registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext
+#   git.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext
 #   ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext
 #
 # Secrets required (repo or org level):
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: registry.infra.centralcloud.com
+  REGISTRY: git.infra.centralcloud.com
   IMAGE: centralcloud/centralcloud-postgres
   TAG: 18-cnpg-ext
   GHCR_REGISTRY: ghcr.io
