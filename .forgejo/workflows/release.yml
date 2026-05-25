@@ -35,6 +35,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Precheck — required secrets present
+        env:
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for var in REGISTRY_USER REGISTRY_PASSWORD; do
+            if [ -z "${!var:-}" ]; then missing+=("$var"); fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required Forgejo secrets: ${missing[*]}"
+            echo "Provision under repo or org settings → Actions → Secrets:"
+            echo "  REGISTRY_USER     — Forgejo user with write to the internal registry"
+            echo "  REGISTRY_PASSWORD — that user's PAT or password"
+            echo "  GHCR_USER         — GitHub user with write to ghcr.io/singularity-ng (optional; if missing, GHCR mirror is skipped)"
+            echo "  GHCR_TOKEN        — GitHub PAT with write:packages scope (optional)"
+            exit 1
+          fi
+          if [ -z "${GHCR_USER:-}" ] || [ -z "${GHCR_TOKEN:-}" ]; then
+            echo "::warning::GHCR_USER or GHCR_TOKEN missing — internal registry will be updated, GHCR mirror will be SKIPPED for this run. Provision the secrets to keep the public mirror in sync."
+            echo "PUSH_TARGET=internal" >> "$GITHUB_ENV"
+          else
+            echo "PUSH_TARGET=both" >> "$GITHUB_ENV"
+          fi
+
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
@@ -49,14 +77,20 @@ jobs:
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
       - name: Login to GHCR
+        if: env.PUSH_TARGET == 'both'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.GHCR_REGISTRY }}
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build and push to internal registry + GHCR mirror
-        run: PUSH=both ./scripts/build-postgres18-cnpg-image.sh
+      - name: Build and push image(s)
+        run: |
+          if [ "${PUSH_TARGET}" = "both" ]; then
+            PUSH=both ./scripts/build-postgres18-cnpg-image.sh
+          else
+            PUSH=1 ./scripts/build-postgres18-cnpg-image.sh
+          fi
 
       - name: Smoke test
         run: just smoke-image

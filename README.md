@@ -87,6 +87,39 @@ This section is generated from `extensions.json`.
 
 <!-- extension-matrix:end -->
 
+## CI Secrets
+
+The Forgejo release workflow (`.forgejo/workflows/release.yml`) publishes
+the operand image to both the internal CNPG registry and the public GHCR
+mirror on every push to `main` and every `v*` tag. Required secrets
+(repo → Settings → Actions → Secrets):
+
+| Secret              | Required | Purpose                                                 |
+|---------------------|----------|---------------------------------------------------------|
+| `REGISTRY_USER`     | yes      | Forgejo user with write to `registry.infra.centralcloud.com` |
+| `REGISTRY_PASSWORD` | yes      | That user's PAT or password                             |
+| `GHCR_USER`         | optional | GitHub user with write to `ghcr.io/singularity-ng`      |
+| `GHCR_TOKEN`        | optional | GitHub PAT with `write:packages` scope                  |
+
+When `GHCR_USER` / `GHCR_TOKEN` are missing the workflow logs a
+`::warning::`, publishes only to the internal registry, and continues.
+Provision the GHCR secrets to keep the public mirror in sync (the SF
+test harness defaults to the GHCR tag because the internal registry
+requires VPN/cluster network).
+
+To provision via the Forgejo CLI:
+
+```sh
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set REGISTRY_USER "ci-runner"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set REGISTRY_PASSWORD "$REGISTRY_PAT"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set GHCR_USER "mikkihugo"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set GHCR_TOKEN "$GHCR_PAT"
+```
+
 ## Public Artifacts
 
 - GitHub source repository with pinned Nix inputs.
