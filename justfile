@@ -28,6 +28,12 @@ build-cnpg-image:
 push-cnpg-image:
     PUSH=1 ./scripts/build-postgres18-cnpg-image.sh
 
+# Push to BOTH the internal CNPG registry AND the GHCR public mirror.
+# Use when operators need off-cluster access (CI matrices, dev laptops
+# without VPN) — keeps both digests in sync.
+push-cnpg-image-mirror:
+    PUSH=both ./scripts/build-postgres18-cnpg-image.sh
+
 sbom:
     mkdir -p dist
     syft registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
