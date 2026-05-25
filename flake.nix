@@ -13,6 +13,10 @@
   };
 
   inputs = {
+    # Align with /srv/infra hosts pinned to nixos-25.11. Stable channel gets
+    # CVE backports; matches OS-level glibc/toolchain on the cluster nodes
+    # this image runs on (cc-de-fsn-core-01, cc-fi-hel-core-01).
+    # Previously nixos-unstable — bumped 2026-05-25 for fleet consistency.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nix2container = {
       url = "github:nlewo/nix2container";
