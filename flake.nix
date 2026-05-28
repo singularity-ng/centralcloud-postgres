@@ -13,11 +13,11 @@
   };
 
   inputs = {
-    # Align with /srv/infra hosts pinned to nixos-25.11. Stable channel gets
+    # Align with /srv/infra hosts pinned to nixos-26.05. Stable channel gets
     # CVE backports; matches OS-level glibc/toolchain on the cluster nodes
     # this image runs on (cc-de-fsn-core-01, cc-fi-hel-core-01).
     # Previously nixos-unstable — bumped 2026-05-25 for fleet consistency.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nix2container = {
       url = "github:nlewo/nix2container";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -84,10 +84,75 @@
             };
           };
         };
+
+        # VectorDrive extension layer.
+        # Reads pre-built pgrx outputs from VECTORDRIVE_EXT_PATH (default:
+        # ../vectordrive/nix/vectordrive-ext). Producing these outputs is a
+        # separate step: `nix develop` inside the vectordrive repo, then
+        # `cd crates/postgres/core && cargo pgrx install
+        # --features pg18,default-profiles,routing --release` and copy the
+        # resulting .so/.control/.sql files into nix/vectordrive-ext/.
+        vectordriveExtPath =
+          let
+            envPath = builtins.getEnv "VECTORDRIVE_EXT_PATH";
+          in
+            if envPath != ""
+            then envPath
+            else toString ../vectordrive/nix/vectordrive-ext;
+        vectordriveExtension = pkgs.stdenv.mkDerivation {
+          pname = "vectordrive-postgres-extension";
+          version = "1.1.0";
+          src = builtins.path {
+            path = /. + vectordriveExtPath;
+            filter = _path: _type: true;
+          };
+          dontBuild = true;
+          installPhase = ''
+            mkdir -p $out/usr/lib/postgresql/18/lib $out/usr/share/postgresql/18/extension
+            for so in $src/lib/*.so; do
+              [ -e "$so" ] && cp -v "$so" $out/usr/lib/postgresql/18/lib/
+            done
+            for f in $src/share/extension/*; do
+              [ -e "$f" ] && cp -v "$f" $out/usr/share/postgresql/18/extension/
+            done
+          '';
+        };
+        # Slim CNPG image with ONLY the VectorDrive pgrx extension layered on
+        # top of the bare upstream CNPG base. Skips timescaledb / vchord /
+        # vchord_bm25 / pg_tokenizer / age / pgmq / etc — VectorDrive supplies
+        # its own vector + sparse types via pgrx (sparsevec_in_wrapper etc).
+        # Add to `extraExtensionLayers` below if a deployment turns out to need
+        # a specific extra extension; do not blanket-include the full bundle.
+        extraExtensionLayers = [];
+        cnpgImageVd = n2c.buildImage {
+          name = "registry.infra.centralcloud.com/centralcloud/vectordrive-postgres";
+          tag = "18-cnpg";
+          fromImage = cnpgBase;
+          inherit arch;
+          maxLayers = 32;
+          copyToRoot = [vectordriveExtension] ++ extraExtensionLayers;
+          config = {
+            User = "26";
+            Cmd = ["bash"];
+            Env = [
+              "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/18/bin"
+              "PIP_BREAK_SYSTEM_PACKAGES=1"
+            ];
+            Labels = {
+              "org.opencontainers.image.title" = "VectorDrive PostgreSQL 18 (CNPG)";
+              "org.opencontainers.image.description" = "Slim CNPG PG18 + VectorDrive pgrx extension (vectordrive_code_search + 377 SQL functions, own halfvec/sparsevec, no vchord/timescaledb)";
+              "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/singularity-ng/vectordrive";
+              "org.opencontainers.image.licenses" = "MIT";
+              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie";
+            };
+          };
+        };
       in {
         postgresql-18-extension-bundle = postgres18.extensionBundle pkgs;
         postgresql-18-extension-closure = postgres18.extensionClosure pkgs;
         postgresql-18-cnpg-image = cnpgImage;
+        postgresql-18-cnpg-image-vd = cnpgImageVd;
+        vectordrive-extension-layer = vectordriveExtension;
         default = postgres18.extensionBundle pkgs;
       }
     );
