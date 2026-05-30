@@ -137,8 +137,8 @@ in {
       };
     debianPlpythonPackages = [
       (deb
-        "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-plpython3-18_18.3-1.pgdg13%2b1_amd64.deb"
-        "sha256-UF1vVTy7hUxZ4B3Vx6Oo6pKrFZ9YRw2isRaksrP45lw=")
+        "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-plpython3-18_18.4-1.pgdg13%2b1_amd64.deb"
+        "sha256-SAOk+0OCbQFa9QnDttIIuo9YS+eiwV8Ej96pLRZNieo=")
       (deb
         "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13_3.13.5-2%2bdeb13u2_amd64.deb"
         "sha256-eS0OXipxP/TRXWWOYurPNJ7AhU7TKc7LFYRYttNEm2s=")

@@ -54,8 +54,8 @@
           else "amd64";
         cnpgBase = n2c.pullImageFromManifest {
           imageName = "cloudnative-pg/postgresql";
-          imageTag = "18.3-system-trixie";
-          imageManifest = ./images/postgres18-cnpg/cnpg-postgresql-18.3-amd64-manifest.json;
+          imageTag = "18.4-system-trixie";
+          imageManifest = ./images/postgres18-cnpg/cnpg-postgresql-18.4-amd64-manifest.json;
           registryUrl = "ghcr.io";
           os = "linux";
           inherit arch;
@@ -80,25 +80,26 @@
               "org.opencontainers.image.description" = "CloudNativePG PostgreSQL 18 image with TimescaleDB, vector, BM25, AGE, and operations extensions";
               "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/centralcloud/centralcloud-postgres";
               "org.opencontainers.image.licenses" = "MIT";
-              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie";
+              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie";
             };
           };
         };
 
         # VectorDrive extension layer.
-        # Reads pre-built pgrx outputs from VECTORDRIVE_EXT_PATH (default:
-        # ../vectordrive/nix/vectordrive-ext). Producing these outputs is a
-        # separate step: `nix develop` inside the vectordrive repo, then
+        # Reads pre-built pgrx outputs from VECTORDRIVE_EXT_PATH. Producing
+        # these outputs is a separate step: `nix develop` inside the
+        # vectordrive repo, then
         # `cd crates/postgres/core && cargo pgrx install
         # --features pg18,default-profiles,routing --release` and copy the
-        # resulting .so/.control/.sql files into nix/vectordrive-ext/.
-        vectordriveExtPath =
-          let
-            envPath = builtins.getEnv "VECTORDRIVE_EXT_PATH";
-          in
-            if envPath != ""
-            then envPath
-            else toString ../vectordrive/nix/vectordrive-ext;
+        # resulting .so/.control/.sql files into a path passed via
+        # VECTORDRIVE_EXT_PATH. Without that override, pure flake checks use
+        # an empty local placeholder so this optional image remains evaluable.
+        vectordriveExtPath = let
+          envPath = builtins.getEnv "VECTORDRIVE_EXT_PATH";
+        in
+          if envPath != ""
+          then envPath
+          else toString ./nix/vectordrive-ext-placeholder;
         vectordriveExtension = pkgs.stdenv.mkDerivation {
           pname = "vectordrive-postgres-extension";
           version = "1.1.0";
@@ -143,7 +144,7 @@
               "org.opencontainers.image.description" = "Slim CNPG PG18 + VectorDrive pgrx extension (vectordrive_code_search + 377 SQL functions, own halfvec/sparsevec, no vchord/timescaledb)";
               "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/singularity-ng/vectordrive";
               "org.opencontainers.image.licenses" = "MIT";
-              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie";
+              "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie";
             };
           };
         };
