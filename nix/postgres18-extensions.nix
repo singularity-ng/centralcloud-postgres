@@ -167,6 +167,19 @@ in {
       cp "${bundle}/extensions.json" \
         "$out/usr/share/postgresql/18/extension/centralcloud-extensions.json"
 
+      # Restored clusters can have a TimescaleDB catalog pinned to the
+      # previous shared-library name even when the new image carries the SQL
+      # update path. Keep the old loader names available so operators can
+      # connect and run `ALTER EXTENSION timescaledb UPDATE`.
+      if [ -e "$out/usr/lib/postgresql/18/lib/timescaledb-2.27.1.so" ]; then
+        ln -s timescaledb-2.27.1.so \
+          "$out/usr/lib/postgresql/18/lib/timescaledb-2.26.4.so"
+      fi
+      if [ -e "$out/usr/lib/postgresql/18/lib/timescaledb-tsl-2.27.1.so" ]; then
+        ln -s timescaledb-tsl-2.27.1.so \
+          "$out/usr/lib/postgresql/18/lib/timescaledb-tsl-2.26.4.so"
+      fi
+
       for deb in ${pkgs.lib.escapeShellArgs debianPlpythonPackages}; do
         dpkg-deb -x "$deb" "$out"
       done
