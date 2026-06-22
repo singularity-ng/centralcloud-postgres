@@ -43,3 +43,16 @@ install-hooks:
 
 fmt:
     alejandra flake.nix nix
+
+# Local CNPG dev cluster (k3d + CNPG). Same image digest as prod, primary
+# + replica, port-forwarded to localhost:5432 (rw) and :5433 (ro).
+# Use for replication/failover/PITR work. Day-to-day app dev uses the
+# plain-docker centralcloud-ops-dev-db for speed.
+cluster-up:
+    centralcloud-postgres-dev-cluster
+
+cluster-down:
+    centralcloud-postgres-dev-cluster --stop
+
+cluster-chaos:
+    centralcloud-postgres-dev-cluster --chaos

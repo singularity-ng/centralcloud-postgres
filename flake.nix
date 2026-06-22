@@ -48,6 +48,24 @@
           config.allowUnfree = true;
         };
         n2c = nix2container.packages.${system}.nix2container;
+        # Local CNPG dev cluster (k3d + CNPG operator). Source of truth
+        # for the cluster spec, image digest, and operator version.
+        # Used by centralcloud-ops dev shell (delegates here) and by the
+        # weekly CI chaos test. Day-to-day dev uses plain docker; this
+        # is opt-in for replication/failover work.
+        devCluster = pkgs.writeShellApplication {
+          name = "centralcloud-postgres-dev-cluster";
+          runtimeInputs = with pkgs; [
+            coreutils
+            gnugrep
+            gnused
+            gawk
+            k3d
+            kubectl
+            kubernetes-helm
+          ];
+          text = builtins.readFile ./scripts/dev-cluster.sh;
+        };
         arch =
           if system == "aarch64-linux"
           then "arm64"
@@ -157,6 +175,7 @@
         postgresql-18-cnpg-image = cnpgImage;
         postgresql-18-cnpg-image-vd = cnpgImageVd;
         vectordrive-extension-layer = vectordriveExtension;
+        centralcloud-postgres-dev-cluster = devCluster;
         default = postgres18.extensionBundle pkgs;
       }
     );
@@ -207,6 +226,7 @@
           overlays = [postgres18.overlay];
           config.allowUnfree = true;
         };
+        devCluster = self.packages.${system}.centralcloud-postgres-dev-cluster;
       in {
         default = pkgs.mkShell {
           packages = [
@@ -218,7 +238,17 @@
             pkgs.docker-client
             pkgs.syft
             pkgs.statix
+            pkgs.k3d
+            pkgs.kubectl
+            devCluster
           ];
+
+          shellHook = ''
+            echo "CentralCloud Postgres dev shell"
+            echo "  just cluster-up    # k3d + CNPG (same image digest as prod)"
+            echo "  just cluster-down  # tear down"
+            echo "  just cluster-chaos # boot + kill primary once ready"
+          '';
         };
       }
     );
