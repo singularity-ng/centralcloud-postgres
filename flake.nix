@@ -126,7 +126,10 @@
         # a specific extra extension; do not blanket-include the full bundle.
         extraExtensionLayers = [];
         cnpgImageVd = n2c.buildImage {
-          name = "registry.infra.centralcloud.com/centralcloud/vectordrive-postgres";
+          # vectordrive is a singularity-ng product; image is namespaced by the
+          # product org (matches the cluster + the live registry repo), even
+          # though it is built by centralcloud-postgres (a centralcloud-org repo).
+          name = "registry.infra.centralcloud.com/singularity-ng/vectordrive-postgres";
           tag = "18-cnpg";
           fromImage = cnpgBase;
           inherit arch;
