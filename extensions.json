@@ -112,6 +112,46 @@
       "notes": "Partition management extension."
     },
     {
+      "name": "pg_ivm",
+      "package": "pg_ivm",
+      "control_file": "pg_ivm.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_ivm;",
+      "category": "views",
+      "enabled_by_default": false,
+      "notes": "Incremental materialized view maintenance — refreshes only changed rows instead of full REFRESH. High value for analytics aggregations (finops cost rollups, dashboards) that would otherwise need full recompute on every write."
+    },
+    {
+      "name": "pg_duckdb",
+      "package": "pg_duckdb",
+      "control_file": "pg_duckdb.control",
+      "shared_preload_libraries": ["pg_duckdb"],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_duckdb;",
+      "category": "analytics",
+      "enabled_by_default": false,
+      "notes": "Embeds DuckDB inside PostgreSQL for vectorized columnar OLAP queries. Run analytical aggregations (finops cost rollups, time-series window functions) without leaving the DB or standing up ClickHouse. Requires shared_preload_libraries restart. Not for OLTP databases — enable only on analytics-facing clusters."
+    },
+    {
+      "name": "wrappers",
+      "package": "wrappers",
+      "control_file": "wrappers.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS wrappers;",
+      "category": "federation",
+      "enabled_by_default": false,
+      "notes": "Supabase FDW collection — S3/Garage, Stripe, BigQuery, Firebase, Airtable, Clickhouse, Redis as foreign tables. Useful for finops collector reading from Garage S3 or external billing APIs directly via SQL."
+    },
+    {
+      "name": "rum",
+      "package": "rum",
+      "control_file": "rum.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS rum;",
+      "category": "indexing",
+      "enabled_by_default": false,
+      "notes": "RUM index access method — full-text search with timestamp ordering in a single index scan. Faster than GIN + ORDER BY ts_rank for time-sorted full-text queries."
+    },
+    {
       "name": "hypopg",
       "package": "hypopg",
       "control_file": "hypopg.control",
@@ -250,6 +290,66 @@
       "category": "security",
       "enabled_by_default": false,
       "notes": "Detailed database audit logging. Preload and configure only where audit volume is acceptable."
+    },
+    {
+      "name": "uuid-ossp",
+      "package": "postgresql_18",
+      "control_file": "uuid-ossp.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";",
+      "category": "compat",
+      "enabled_by_default": false,
+      "notes": "Legacy compat only. PG18 has gen_random_uuid() (v4) and uuidv7() as built-ins — no extension needed for new code. Enable only for existing apps calling uuid_generate_v4() that cannot be migrated."
+    },
+    {
+      "name": "hstore",
+      "package": "postgresql_18",
+      "control_file": "hstore.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS hstore;",
+      "category": "types",
+      "enabled_by_default": false,
+      "notes": "Core contrib key-value store type. Prefer JSONB for new code; enable for apps that use hstore columns."
+    },
+    {
+      "name": "citext",
+      "package": "postgresql_18",
+      "control_file": "citext.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS citext;",
+      "category": "types",
+      "enabled_by_default": false,
+      "notes": "Core contrib case-insensitive text type. Useful for email and username columns; simpler than lower() indexes."
+    },
+    {
+      "name": "ltree",
+      "package": "postgresql_18",
+      "control_file": "ltree.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS ltree;",
+      "category": "types",
+      "enabled_by_default": false,
+      "notes": "Core contrib hierarchical label tree type and operators. Efficient ancestor/descendant queries without recursive CTEs."
+    },
+    {
+      "name": "intarray",
+      "package": "postgresql_18",
+      "control_file": "intarray.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS intarray;",
+      "category": "types",
+      "enabled_by_default": false,
+      "notes": "Core contrib integer array functions and GiST/GIN indexes. Efficient set membership and intersection queries."
+    },
+    {
+      "name": "pg_buffercache",
+      "package": "postgresql_18",
+      "control_file": "pg_buffercache.control",
+      "shared_preload_libraries": [],
+      "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_buffercache;",
+      "category": "diagnostics",
+      "enabled_by_default": false,
+      "notes": "Core contrib shared buffer cache inspection. Useful for diagnosing what is and isn't cached during performance investigation."
     }
   ]
 }
