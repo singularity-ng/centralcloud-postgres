@@ -82,7 +82,7 @@ jobs:
           authfile="${XDG_CONFIG_HOME}/containers/auth.json"
           mkdir -p "$(dirname "$authfile")"
           printf '%s' "$REGISTRY_PASSWORD" |
-            skopeo login --authfile "$authfile" --username "$REGISTRY_USER" --password-stdin git.infra.centralcloud.com
+            skopeo login --authfile "$authfile" --username "$REGISTRY_USER" --password-stdin registry.infra.centralcloud.com
           echo "REGISTRY_AUTH_FILE=$authfile" >> "$GITHUB_ENV"
 
       - name: Login to GHCR
