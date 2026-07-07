@@ -24,21 +24,8 @@ if [[ "$use_remote_builders" != "1" ]]; then
   nix_build_args+=(--option builders "")
 fi
 
-nix_skopeo_bin() {
-  local copy_tool="$1"
-  local path_entry
-  path_entry="$(
-    grep '^export PATH=' "$copy_tool/bin/copy-to-registry" |
-      sed 's/^export PATH="//;s/"$//' |
-      tr ':' '\n' |
-      grep '/skopeo-.*/bin$' |
-      head -1
-  )"
-  echo "${path_entry}/skopeo"
-}
-
 skopeo_copy() {
-  local skopeo_bin="$1"
+  local copy_tool="$1"
   local image_json="$2"
   local destination="$3"
   local user="$4"
@@ -49,10 +36,14 @@ skopeo_copy() {
     exit 1
   fi
 
-  "$skopeo_bin" --insecure-policy copy \
-    --dest-creds "${user}:${password}" \
-    "nix:${image_json}" \
-    "docker://${destination}"
+  # shellcheck disable=SC1090
+  (
+    eval "$(grep '^export PATH=' "$copy_tool/bin/copy-to-registry")"
+    skopeo --insecure-policy copy \
+      --dest-creds "${user}:${password}" \
+      "nix:${image_json}" \
+      "docker://${destination}"
+  )
 }
 
 case "$push_image" in
@@ -66,13 +57,12 @@ case "$push_image" in
     copy_tool="$(
       nix build "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image.copyToRegistry" --print-out-paths --no-link
     )"
-    skopeo_bin="$(nix_skopeo_bin "$copy_tool")"
 
-    skopeo_copy "$skopeo_bin" "$image_json" "$INTERNAL_TAG" \
+    skopeo_copy "$copy_tool" "$image_json" "$INTERNAL_TAG" \
       "${REGISTRY_USER:-}" "${REGISTRY_PASSWORD:-}"
 
     if [[ "$push_image" == "both" ]]; then
-      skopeo_copy "$skopeo_bin" "$image_json" "$GHCR_TAG" \
+      skopeo_copy "$copy_tool" "$image_json" "$GHCR_TAG" \
         "${GHCR_USER:-}" "${GHCR_TOKEN:-}"
     fi
     ;;
