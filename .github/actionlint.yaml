@@ -1,0 +1,13 @@
+# actionlint — https://github.com/rhysd/actionlint
+#
+# Declares Forgejo runner labels used by centralcloud-postgres workflows so
+# actionlint does not false-flag them. Lints .forgejo/workflows and
+# .github/workflows (GitHub-Actions-compatible syntax).
+self-hosted-runner:
+  labels:
+    - self-hosted
+    - nix
+    - nixos-26.05
+    - ubuntu-latest
+
+config-variables: null

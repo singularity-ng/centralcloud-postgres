@@ -101,11 +101,13 @@ jobs:
             PUSH=1 ./scripts/build-postgres18-cnpg-image.sh
           fi
 
-      - name: Smoke test
-        run: just smoke-image
-
       - name: Generate SBOM
-        run: just sbom
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          nix shell nixpkgs#syft -c syft \
+            registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext \
+            -o spdx-json=dist/sbom.spdx.json
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4

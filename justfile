@@ -1,10 +1,31 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-check:
-    alejandra --check flake.nix nix
-    statix check .
-    deadnix flake.nix nix
+# Fast lint (shell + workflows + docs). Nix format/lint runs in lefthook pre-commit
+# and in `nix flake check` via `just check`.
+lint:
     ./scripts/generate-extension-docs.py --check
+    just lint-workflows
+    just lint-shell
+
+lint-workflows:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    shopt -s nullglob
+    files=(.forgejo/workflows/*.{yml,yaml} .github/workflows/*.{yml,yaml})
+    if ((${#files[@]})); then
+      actionlint -config-file .github/actionlint.yaml "${files[@]}"
+    fi
+
+lint-shell:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    shopt -s nullglob
+    files=(scripts/*.sh)
+    if ((${#files[@]})); then
+      shellcheck -S error "${files[@]}"
+    fi
+
+check:
     nix flake check --option builders ""
 
 docs:
@@ -15,9 +36,6 @@ build-bundle:
 
 build-image:
     nix build --option builders "" .#postgresql-18-cnpg-image --no-link
-
-load-cnpg-image:
-    nix run --option builders "" .#postgresql-18-cnpg-image.copyToDockerDaemon
 
 smoke-image:
     ./scripts/smoke-image.sh
@@ -34,20 +52,32 @@ push-cnpg-image:
 push-cnpg-image-mirror:
     PUSH=both ./scripts/build-postgres18-cnpg-image.sh
 
+build-cnpg-image-vd:
+    @echo "vectordrive image script not vendored yet; use: nix build .#postgresql-18-cnpg-image-vd" >&2
+    @exit 1
+
+push-cnpg-image-vd:
+    @echo "see build-cnpg-image-vd" >&2
+    @exit 1
+
+push-cnpg-image-vd-mirror:
+    @echo "see build-cnpg-image-vd" >&2
+    @exit 1
+
 sbom:
     mkdir -p dist
-    syft registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
+    nix shell nixpkgs#syft -c syft registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
 
 install-hooks:
     lefthook install
 
 fmt:
-    alejandra flake.nix nix
+    nix fmt
 
 # Local CNPG dev cluster (k3d + CNPG). Same image digest as prod, primary
 # + replica, port-forwarded to localhost:5432 (rw) and :5433 (ro).
 # Use for replication/failover/PITR work. Day-to-day app dev uses the
-# plain-docker centralcloud-ops-dev-db for speed.
+# app repo's own database workflow for speed.
 cluster-up:
     centralcloud-postgres-dev-cluster
 

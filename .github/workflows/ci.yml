@@ -1,34 +1,12 @@
-name: CI
+# CI runs on Forgejo (.forgejo/workflows/ci.yml). This placeholder keeps the
+# GitHub mirror from showing a missing workflow.
+name: CI (disabled — see Forgejo)
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
-  check:
+  noop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
-        with:
-          extra_nix_config: |
-            accept-flake-config = true
-      - name: Check formatting, lint, generated docs, and flake
-        run: nix develop --command just check
-
-  image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v31
-        with:
-          extra_nix_config: |
-            accept-flake-config = true
-      - name: Build OCI image
-        run: nix build .#postgresql-18-cnpg-image
-
+      - run: echo "Checks run on Forgejo. See .forgejo/workflows/ci.yml"

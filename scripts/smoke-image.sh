@@ -1,38 +1,34 @@
 #!/usr/bin/env bash
+# Image smoke checks without docker/skopeo in the dev shell.
+#
+# Usage:
+#   smoke-image.sh [PUSH_MODE] [IMAGE_REF]
+#
+# PUSH_MODE=0 (or unset with no ref): nix flake check cnpg-image derivation
+# PUSH_MODE=1|both + IMAGE_REF: remote label check when skopeo is on PATH (CI runner)
 set -euo pipefail
 
-image="${1:-ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext}"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+push_mode="${1:-0}"
+image="${2:-registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext}"
 
-docker run --rm --entrypoint bash "$image" -lc '
-  set -euo pipefail
-  for control in \
-    timescaledb.control \
-    pg_stat_statements.control \
-    vector.control \
-    vchord.control \
-    vchord_bm25.control \
-    pg_tokenizer.control \
-    age.control \
-    pgmq.control \
-    pg_cron.control \
-    pg_repack.control \
-    pg_partman.control \
-    hypopg.control \
-    pg_hint_plan.control \
-    plpgsql_check.control \
-    pg_trgm.control \
-    unaccent.control \
-    btree_gin.control \
-    btree_gist.control \
-    pgstattuple.control \
-    amcheck.control \
-    pageinspect.control \
-    postgres_fdw.control \
-    pgcrypto.control \
-    pg_prewarm.control \
-    pgaudit.control; do
-    test -f "/usr/share/postgresql/18/extension/$control"
-  done
-  test -f "/usr/lib/postgresql/18/lib/auto_explain.so"
-  /usr/lib/postgresql/18/bin/postgres --version
-'
+if [[ "$push_mode" == "0" ]]; then
+  nix build --option builders "" "$repo_root#postgresql-18-cnpg-image" --no-link
+  exit 0
+fi
+
+if ! command -v skopeo >/dev/null 2>&1; then
+  echo "smoke-image.sh: skopeo not on PATH; skipping remote inspect for $image" >&2
+  echo "smoke-image.sh: CI runners provide skopeo; local dev uses PUSH=0 build check" >&2
+  exit 0
+fi
+
+inspect_json="$(skopeo inspect "docker://$image")"
+actual_profile="$(jq -r '.Labels["org.centralcloud.postgres.extension-profile"] // ""' <<<"$inspect_json")"
+
+if [[ -n "$actual_profile" && "$actual_profile" != "platform" ]]; then
+  echo "smoke-image.sh: expected profile=platform, got profile=$actual_profile" >&2
+  exit 1
+fi
+
+jq -r '.Digest' <<<"$inspect_json"

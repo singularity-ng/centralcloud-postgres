@@ -105,8 +105,8 @@ kubectl wait --for=condition=Ready pod \
 #    Runs psql through the primary pod directly so we don't depend on the
 #    `kubectl-cnpg` plugin (not in nixpkgs; would add 50 MB to the dev shell).
 kubectl exec -n "$NAMESPACE" \
-  $(kubectl get pod -n "$NAMESPACE" -l cnpg.io/cluster=ops-postgres,role=primary \
-    -o jsonpath='{.items[0].metadata.name}') \
+  "$(kubectl get pod -n "$NAMESPACE" -l cnpg.io/cluster=ops-postgres,role=primary \
+    -o jsonpath='{.items[0].metadata.name}')" \
   -c postgres -- psql -U postgres -d centralcloud_ops \
   -c "CREATE DATABASE centralcloud_ops_test;" 2>/dev/null || true
 

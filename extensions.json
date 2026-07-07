@@ -129,7 +129,8 @@
       "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_duckdb;",
       "category": "analytics",
       "enabled_by_default": false,
-      "notes": "Embeds DuckDB inside PostgreSQL for vectorized columnar OLAP queries. Run analytical aggregations (finops cost rollups, time-series window functions) without leaving the DB or standing up ClickHouse. Requires shared_preload_libraries restart. Not for OLTP databases — enable only on analytics-facing clusters."
+      "bundled": false,
+      "notes": "Catalog only — DuckDB submodule build not yet in the CNPG image bundle. Embeds DuckDB for vectorized OLAP; enable only on analytics-facing clusters after packaging lands."
     },
     {
       "name": "wrappers",

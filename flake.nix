@@ -51,7 +51,8 @@
         # Local CNPG dev cluster (k3d + CNPG operator). Source of truth
         # for the cluster spec, image digest, and operator version.
         # Used by centralcloud-ops dev shell (delegates here) and by the
-        # weekly CI chaos test. Day-to-day dev uses plain docker; this
+        # weekly CI chaos test. Day-to-day app dev should use the app repo's
+        # own database workflow; this
         # is opt-in for replication/failover work.
         devCluster = pkgs.writeShellApplication {
           name = "centralcloud-postgres-dev-cluster";
@@ -79,9 +80,7 @@
           inherit arch;
         };
         extensionRoot = postgres18.cnpgExtensionRoot pkgs;
-        cnpgImage = n2c.buildImage {
-          name = "registry.infra.centralcloud.com/centralcloud/centralcloud-postgres";
-          tag = "18-cnpg-ext";
+        cnpgImageConfig = {
           fromImage = cnpgBase;
           inherit arch;
           maxLayers = 32;
@@ -102,6 +101,18 @@
             };
           };
         };
+        cnpgImage =
+          n2c.buildImage {
+            name = "registry.infra.centralcloud.com/centralcloud/centralcloud-postgres";
+            tag = "18-cnpg-ext";
+          }
+          // cnpgImageConfig;
+        cnpgImageGhcr =
+          n2c.buildImage {
+            name = "ghcr.io/singularity-ng/centralcloud-postgres";
+            tag = "18-cnpg-ext";
+          }
+          // cnpgImageConfig;
 
         # VectorDrive extension layer.
         # Reads pre-built pgrx outputs from VECTORDRIVE_EXT_PATH. Producing
@@ -173,6 +184,7 @@
         postgresql-18-extension-bundle = postgres18.extensionBundle pkgs;
         postgresql-18-extension-closure = postgres18.extensionClosure pkgs;
         postgresql-18-cnpg-image = cnpgImage;
+        postgresql-18-cnpg-image-ghcr = cnpgImageGhcr;
         postgresql-18-cnpg-image-vd = cnpgImageVd;
         vectordrive-extension-layer = vectordriveExtension;
         centralcloud-postgres-dev-cluster = devCluster;
@@ -214,6 +226,18 @@
           touch "$out"
         '';
 
+        workflows = pkgs.runCommand "workflow-lint-check" {nativeBuildInputs = [pkgs.actionlint];} ''
+          cp -R ${src} source
+          chmod -R u+w source
+          cd source
+          shopt -s nullglob
+          files=(.forgejo/workflows/*.{yml,yaml} .github/workflows/*.{yml,yaml})
+          if [ "''${#files[@]}" -gt 0 ]; then
+            actionlint -config-file .github/actionlint.yaml "''${files[@]}"
+          fi
+          touch "$out"
+        '';
+
         extension-bundle = packages.postgresql-18-extension-bundle;
         cnpg-image = packages.postgresql-18-cnpg-image;
       }
@@ -230,27 +254,39 @@
       in {
         default = pkgs.mkShell {
           packages = [
+            pkgs.actionlint
             pkgs.alejandra
             pkgs.deadnix
             pkgs.just
+            pkgs.jq
             pkgs.lefthook
             pkgs.nix
-            pkgs.docker-client
-            pkgs.syft
+            pkgs.python3
+            pkgs.shellcheck
             pkgs.statix
-            pkgs.k3d
-            pkgs.kubectl
             devCluster
           ];
 
           shellHook = ''
-            echo "CentralCloud Postgres dev shell"
+            echo "CentralCloud Postgres dev shell (nixos-26.05)"
+            echo "  just check         # nix flake check (format, lint, image)"
+            echo "  just install-hooks # lefthook (also auto on first nix develop)"
             echo "  just cluster-up    # k3d + CNPG (same image digest as prod)"
             echo "  just cluster-down  # tear down"
             echo "  just cluster-chaos # boot + kill primary once ready"
+            if [ -n "''${LEFTHOOK_AUTOINSTALL:-}" ] && [ "''$LEFTHOOK_AUTOINSTALL" = "0" ]; then
+              :
+            elif [ -d .git ] && [ -f lefthook.yml ] && [ ! -f .git/.lefthook-autoinstalled ] && [ -t 0 ]; then
+              if lefthook install 2>/dev/null; then
+                touch .git/.lefthook-autoinstalled
+                echo "lefthook: git hooks installed (run \`lefthook run pre-commit\` to test)"
+              fi
+            fi
           '';
         };
       }
     );
+
+    formatter = forAllSystems (system: (import nixpkgs {inherit system;}).alejandra);
   };
 }

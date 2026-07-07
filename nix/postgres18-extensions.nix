@@ -85,93 +85,48 @@ _: let
 
               pgaudit = oldAttrs.passthru.pkgs.callPackage ./pgaudit-pg18.nix {};
 
-              pg_duckdb = prev.stdenv.mkDerivation {
-                pname = "pg_duckdb";
-                version = "1.1.1";
-
-                src = prev.fetchurl {
-                  url = "https://api.github.com/repos/duckdb/pg_duckdb/tarball/v1.1.1";
-                  sha256 = "05bpgzjmg8v4sg70i55q9ya29051qp3krclmqqwixsqxk46mzhyi";
-                };
-
-                nativeBuildInputs = [
-                  prev.cmake
-                  prev.ninja
-                  prev.pkg-config
-                  prev.git
-                ];
-
-                buildInputs = [
-                  prev.postgresql_18
-                  prev.duckdb
-                  prev.openssl
-                  prev.zlib
-                ];
-
-                # pg_duckdb's Makefile fetches DuckDB at build time; point it at
-                # the nixpkgs duckdb (v1.4.3 matches DUCKDB_VERSION in Makefile).
-                postPatch = ''
-                  # Use pre-built DuckDB from nixpkgs instead of fetching/building
-                  mkdir -p third_party/duckdb/build/release
-                  ln -s ${prev.duckdb}/lib/libduckdb.so \
-                    third_party/duckdb/build/release/libduckdb.so
-                  ln -s ${prev.duckdb}/include \
-                    third_party/duckdb/src/include
-                '';
-
-                makeFlags = [
-                  "PG_CONFIG=${prev.postgresql_18}/bin/pg_config"
-                  "DUCKDB_BUILD=ReleaseStatic"
-                ];
-
-                installPhase = ''
-                  mkdir -p $out/lib $out/share/postgresql/extension
-                  install -m 755 pg_duckdb.so $out/lib/
-                  install -m 644 pg_duckdb.control $out/share/postgresql/extension/
-                  install -m 644 sql/pg_duckdb--*.sql $out/share/postgresql/extension/
-                '';
-
-                meta = {
-                  description = "DuckDB-powered PostgreSQL for high-performance OLAP analytics in-process";
-                  homepage = "https://github.com/duckdb/pg_duckdb";
-                  license = prev.lib.licenses.mit;
-                  platforms = ["x86_64-linux" "aarch64-linux"];
-                };
-              };
+              # pg_duckdb: catalog-only in extensions.json until submodule + DuckDB
+              # build is packaged (see bundled=false on that entry).
 
               wrappers = let
-                arch = if prev.stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
+                arch =
+                  if prev.stdenv.hostPlatform.isAarch64
+                  then "arm64"
+                  else "amd64";
                 hashes = {
                   amd64 = "0fxyszn1q4ih0iqmv3yzlnp4aga8j9yhrsmymh170niryjj67pcf";
                   arm64 = "1bmj1zdffg0sz7l4w1hj4s4cvrr4pn7kgqjk75wp7dn5m7l0fzgx";
                 };
-              in prev.stdenv.mkDerivation {
-                pname = "wrappers";
-                version = "0.6.2";
+              in
+                prev.stdenv.mkDerivation {
+                  pname = "wrappers";
+                  version = "0.6.2";
 
-                src = prev.fetchurl {
-                  url = "https://github.com/supabase/wrappers/releases/download/v0.6.2/wrappers-v0.6.2-pg18-${arch}-linux-gnu.deb";
-                  sha256 = hashes.${arch};
+                  src = prev.fetchurl {
+                    url = "https://github.com/supabase/wrappers/releases/download/v0.6.2/wrappers-v0.6.2-pg18-${arch}-linux-gnu.deb";
+                    sha256 = hashes.${arch};
+                  };
+
+                  nativeBuildInputs = [prev.dpkg];
+
+                  unpackPhase = "dpkg-deb -x $src .";
+
+                  # The .deb ships relative symlinks under usr/lib/postgresql/18/lib;
+                  # copy the real artifacts instead so Nix store paths stay valid.
+                  installPhase = ''
+                    mkdir -p $out/lib $out/share/postgresql/extension
+                    install -m 755 usr/lib/postgresql/lib/*.so $out/lib/
+                    install -m 644 usr/share/postgresql/18/extension/*.control $out/share/postgresql/extension/
+                    install -m 644 var/lib/postgresql/extension/*.sql $out/share/postgresql/extension/
+                  '';
+
+                  meta = {
+                    description = "Supabase FDW wrappers — S3, Stripe, Firebase, Airtable, BigQuery and more as foreign tables";
+                    homepage = "https://github.com/supabase/wrappers";
+                    license = prev.lib.licenses.asl20;
+                    platforms = ["x86_64-linux" "aarch64-linux"];
+                  };
                 };
-
-                nativeBuildInputs = [prev.dpkg prev.autoPatchelfHook];
-                buildInputs = [prev.stdenv.cc.cc.lib prev.openssl];
-
-                unpackPhase = "dpkg-deb -x $src .";
-
-                installPhase = ''
-                  mkdir -p $out/lib $out/share/postgresql/extension
-                  cp -r usr/lib/postgresql/18/lib/. $out/lib/ 2>/dev/null || true
-                  cp -r usr/share/postgresql/18/extension/. $out/share/postgresql/extension/ 2>/dev/null || true
-                '';
-
-                meta = {
-                  description = "Supabase FDW wrappers — S3, Stripe, Firebase, Airtable, BigQuery and more as foreign tables";
-                  homepage = "https://github.com/supabase/wrappers";
-                  license = prev.lib.licenses.asl20;
-                  platforms = ["x86_64-linux" "aarch64-linux"];
-                };
-              };
             };
         };
     });
@@ -190,7 +145,6 @@ _: let
       pg_repack
       pg_partman
       pg_ivm
-      pg_duckdb
       wrappers
       hypopg
       pg_hint_plan

@@ -5,8 +5,9 @@ be small, pinned, and easy to audit.
 
 ## Requirements
 
-- Nix with flakes enabled.
-- Docker or Podman only when loading/running the OCI image locally.
+- Nix with flakes enabled (nixos-26.05 / `nix develop`).
+- Image publish uses **nix2container** `copyToRegistry` — no docker client in the dev shell.
+- Remote registry smoke (`just smoke-image` after push) uses **skopeo on the CI runner** only.
 
 Enter the dev shell:
 
@@ -17,14 +18,20 @@ nix develop
 Run the full local check:
 
 ```sh
-just check
+just check   # nix flake check (format, statix, deadnix, workflows, image)
+just lint    # fast: extension docs + actionlint + shellcheck only
+just fmt     # nix fmt (alejandra via flake formatter)
 ```
 
-Install local hooks:
+Install local hooks (also auto-installed on first `nix develop`):
 
 ```sh
 just install-hooks
 ```
+
+Lefthook runs on pre-commit (staged Nix/workflows/shell) and pre-push (`just check`).
+Nix lint trio: **alejandra** (format), **statix** (anti-patterns), **deadnix** (unused bindings).
+Also: actionlint, shellcheck. k3d/kubectl live in the dev-cluster package only; syft is pulled on demand for `just sbom`.
 
 ## Packaging Rules
 
@@ -39,7 +46,8 @@ just install-hooks
 
 1. Run `just check`.
 2. Run `just build-image`.
-3. Load and smoke test locally with `just build-cnpg-image`.
-4. Generate an SBOM with `just sbom`.
-5. Push with `PUSH=1 just build-cnpg-image`.
-6. Tag the repo with the PostgreSQL major and extension set.
+3. Build without publishing with `just build-cnpg-image`.
+4. Push with `PUSH=1 just build-cnpg-image`.
+5. Smoke the published image with `just smoke-image`.
+6. Generate an SBOM with `just sbom`.
+7. Tag the repo with the PostgreSQL major and extension set.

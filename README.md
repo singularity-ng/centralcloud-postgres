@@ -70,6 +70,10 @@ This section is generated from `extensions.json`.
 | `pg_cron` | `pg_cron` | Yes | `pg_cron` | No | Requires cron.database_name for the database that owns jobs. |
 | `pg_repack` | `pg_repack` | Yes | No | No | Online table and index reorganization. |
 | `pg_partman` | `pg_partman` | Yes | No | No | Partition management extension. |
+| `pg_ivm` | `pg_ivm` | Yes | No | No | Incremental materialized view maintenance — refreshes only changed rows instead of full REFRESH. High value for analytics aggregations (finops cost rollups, dashboards) that would otherwise need full recompute on every write. |
+| `pg_duckdb` | `pg_duckdb` | No (catalog only) | `pg_duckdb` | No | Catalog only — DuckDB submodule build not yet in the CNPG image bundle. Embeds DuckDB for vectorized OLAP; enable only on analytics-facing clusters after packaging lands. |
+| `wrappers` | `wrappers` | Yes | No | No | Supabase FDW collection — S3/Garage, Stripe, BigQuery, Firebase, Airtable, Clickhouse, Redis as foreign tables. Useful for finops collector reading from Garage S3 or external billing APIs directly via SQL. |
+| `rum` | `rum` | Yes | No | No | RUM index access method — full-text search with timestamp ordering in a single index scan. Faster than GIN + ORDER BY ts_rank for time-sorted full-text queries. |
 | `hypopg` | `hypopg` | Yes | No | No | Hypothetical indexes for query planning. |
 | `pg_hint_plan` | `pg_hint_plan` | Yes | No | No | Planner hints for exceptional query tuning cases. |
 | `plpgsql_check` | `plpgsql_check` | Yes | No | No | Static analysis and runtime checks for PL/pgSQL. |
@@ -84,6 +88,12 @@ This section is generated from `extensions.json`.
 | `pgcrypto` | `postgresql_18` | Yes | No | No | Core contrib cryptographic helpers and random data functions. |
 | `pg_prewarm` | `postgresql_18` | Yes | No | No | Core contrib cache warming for important tables and indexes. |
 | `pgaudit` | `pgaudit` | Yes | `pgaudit` | No | Detailed database audit logging. Preload and configure only where audit volume is acceptable. |
+| `uuid-ossp` | `postgresql_18` | Yes | No | No | Legacy compat only. PG18 has gen_random_uuid() (v4) and uuidv7() as built-ins — no extension needed for new code. Enable only for existing apps calling uuid_generate_v4() that cannot be migrated. |
+| `hstore` | `postgresql_18` | Yes | No | No | Core contrib key-value store type. Prefer JSONB for new code; enable for apps that use hstore columns. |
+| `citext` | `postgresql_18` | Yes | No | No | Core contrib case-insensitive text type. Useful for email and username columns; simpler than lower() indexes. |
+| `ltree` | `postgresql_18` | Yes | No | No | Core contrib hierarchical label tree type and operators. Efficient ancestor/descendant queries without recursive CTEs. |
+| `intarray` | `postgresql_18` | Yes | No | No | Core contrib integer array functions and GiST/GIN indexes. Efficient set membership and intersection queries. |
+| `pg_buffercache` | `postgresql_18` | Yes | No | No | Core contrib shared buffer cache inspection. Useful for diagnosing what is and isn't cached during performance investigation. |
 
 <!-- extension-matrix:end -->
 

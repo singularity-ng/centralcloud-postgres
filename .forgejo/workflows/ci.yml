@@ -1,0 +1,37 @@
+# PR and main-branch validation on the self-hosted Nix runner.
+# Release image publish stays in release.yml.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Flake check
+    runs-on: [nix, nixos-26.05, self-hosted]
+    env:
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
+      XDG_CONFIG_HOME: /tmp/.config
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify runner-provided Nix
+        run: |
+          set -euo pipefail
+          which nix
+          nix --version
+          mkdir -p "$XDG_CONFIG_HOME/nix"
+          if ! grep -qF 'experimental-features = nix-command flakes' "$XDG_CONFIG_HOME/nix/nix.conf" 2>/dev/null; then
+            echo 'experimental-features = nix-command flakes' >> "$XDG_CONFIG_HOME/nix/nix.conf"
+            echo 'accept-flake-config = true' >> "$XDG_CONFIG_HOME/nix/nix.conf"
+          fi
+
+      - name: Check format, lint, docs, workflows, and image derivation
+        run: nix flake check --option builders ""

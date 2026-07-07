@@ -1,15 +1,73 @@
+# lefthook.yml — centralcloud-postgres git hooks.
+#
+# Install: `just install-hooks` or `nix develop` (auto-install on first shell)
+# Manual:  `lefthook run pre-commit`
+# Skip:    `LEFTHOOK=0 git commit ...`
+#
+# Tools (from flake devShell): alejandra, statix, deadnix, actionlint,
+# shellcheck, lefthook.
+
 pre-commit:
   parallel: true
   commands:
-    alejandra:
-      glob: "*.nix"
-      run: alejandra --check {staged_files}
-    statix:
-      glob: "*.nix"
-      run: statix check .
-    deadnix:
-      glob: "*.nix"
-      run: deadnix flake.nix nix
+    nix-fmt:
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)[^/]+\.nix$|flake\.nix$' || true)
+        if [ -z "$files" ]; then
+          echo "nix-fmt: skip"
+          exit 0
+        fi
+        alejandra --check $files
+
+    nix-deadnix:
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)[^/]+\.nix$|flake\.nix$' || true)
+        if [ -z "$files" ]; then
+          echo "nix-deadnix: skip"
+          exit 0
+        fi
+        deadnix --fail $files
+
+    nix-statix:
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '(^|/)[^/]+\.nix$|flake\.nix$' || true)
+        if [ -z "$files" ]; then
+          echo "nix-statix: skip"
+          exit 0
+        fi
+        printf '%s\0' $files | xargs -0 -n1 statix check
+
     extension-docs:
-      glob: "{README.md,extensions.json,scripts/generate-extension-docs.py}"
-      run: ./scripts/generate-extension-docs.py --check
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=ACMR \
+          | grep -E '(^|/)README\.md$|(^|/)extensions\.json$|(^|/)scripts/generate-extension-docs\.py$' || true)
+        if [ -z "$files" ]; then
+          echo "extension-docs: skip"
+          exit 0
+        fi
+        ./scripts/generate-extension-docs.py --check
+
+    actionlint:
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=ACMR \
+          | grep -E '(^|/)(\.github|\.forgejo)/workflows/.*\.ya?ml$' || true)
+        if [ -z "$files" ]; then
+          echo "actionlint: skip"
+          exit 0
+        fi
+        echo "$files" | xargs actionlint -config-file .github/actionlint.yaml
+
+    shellcheck:
+      run: |
+        files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.sh$' || true)
+        if [ -z "$files" ]; then
+          echo "shellcheck: skip"
+          exit 0
+        fi
+        echo "$files" | xargs shellcheck -S error
+
+pre-push:
+  parallel: false
+  commands:
+    flake-check:
+      run: just check

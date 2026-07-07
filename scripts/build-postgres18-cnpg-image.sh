@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
-# Build the CentralCloud PostgreSQL 18 CNPG image.
+# Build the CentralCloud PostgreSQL 18 CNPG image via nix2container.
 #
 # Modes (env vars):
-#   PUSH=0  (default) — copy to local Docker daemon for smoke testing
-#   PUSH=1            — copy to the internal registry only
-#                       (registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext)
-#   PUSH=both         — copy to BOTH the internal registry AND the GHCR mirror
-#                       (ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext)
-#                       — used by CI and any operator manually re-syncing the public mirror.
+#   PUSH=0  (default) — build the OCI image derivation only (no publish)
+#   PUSH=1            — nix2container copyToRegistry → internal registry
+#   PUSH=both         — internal registry, then GHCR mirror (second copyToRegistry)
 #   USE_REMOTE_BUILDERS=1 — allow nix to dispatch to remote builders.
 set -euo pipefail
 
@@ -25,24 +22,14 @@ fi
 
 case "$push_image" in
   0)
-    nix run "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image.copyToDockerDaemon"
+    nix build "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image" --no-link
     ;;
   1)
     nix run "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image.copyToRegistry"
     ;;
   both)
-    # Internal registry first (matches operand image used by the
-    # sf-postgres CNPG cluster), then mirror to GHCR for off-cluster
-    # access (e.g. CI matrix in repos that can't reach the internal
-    # registry).
     nix run "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image.copyToRegistry"
-    # Re-tag the daemon-loaded image isn't sufficient because we built
-    # via nix2container.copyToRegistry which doesn't go through the daemon.
-    # Instead, use skopeo to copy registry→registry — fast (digest-based),
-    # auth from each registry's local docker config.
-    skopeo copy --quiet \
-      "docker://$INTERNAL_TAG" \
-      "docker://$GHCR_TAG"
+    nix run "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image-ghcr.copyToRegistry"
     ;;
   *)
     echo "build-postgres18-cnpg-image.sh: unknown PUSH=$push_image (expected 0, 1, or both)" >&2
@@ -50,5 +37,5 @@ case "$push_image" in
     ;;
 esac
 
-./scripts/smoke-image.sh "$INTERNAL_TAG"
+./scripts/smoke-image.sh "${push_image}" "$INTERNAL_TAG"
 echo "$INTERNAL_TAG"
