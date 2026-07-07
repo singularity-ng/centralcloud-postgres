@@ -100,7 +100,10 @@ jobs:
 
       - name: Build and push image(s)
         env:
-          REGISTRY_AUTH_FILE: ${{ env.REGISTRY_AUTH_FILE }}
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           set -euo pipefail
           if [ "${PUSH_TARGET}" = "both" ]; then

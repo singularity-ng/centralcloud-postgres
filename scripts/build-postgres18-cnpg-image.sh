@@ -3,13 +3,13 @@
 #
 # Modes (env vars):
 #   PUSH=0  (default) — build the OCI image derivation only (no publish)
-#   PUSH=1            — skopeo copy → internal registry
+#   PUSH=1            — copyToRegistry → internal registry
 #   PUSH=both         — internal registry, then GHCR mirror
 #   USE_REMOTE_BUILDERS=1 — allow nix to dispatch to remote builders.
 #
-# Publish uses host skopeo with REGISTRY_AUTH_FILE (from CI login), not
-# nix run copyToRegistry — the latter runs skopeo in a sandbox that cannot
-# read the runner's authfile.
+# Publish credentials (CI sets these from Forgejo/GitHub secrets):
+#   REGISTRY_USER / REGISTRY_PASSWORD — internal registry
+#   GHCR_USER / GHCR_TOKEN            — GHCR mirror (PUSH=both only)
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,33 +24,36 @@ if [[ "$use_remote_builders" != "1" ]]; then
   nix_build_args+=(--option builders "")
 fi
 
-skopeo_copy() {
-  local image_json="$1"
-  local destination="$2"
+push_with_creds() {
+  local attr="$1"
+  local user="$2"
+  local password="$3"
 
-  # REGISTRY_AUTH_FILE is set by CI after skopeo login; skopeo copy reads it
-  # from the environment (there is no --authfile flag on copy).
-  skopeo --insecure-policy copy "nix:${image_json}" "docker://${destination}"
+  if [[ -z "$user" || -z "$password" ]]; then
+    echo "build-postgres18-cnpg-image.sh: missing registry credentials for ${attr}" >&2
+    exit 1
+  fi
+
+  # nix2container's skopeo supports the nix: transport; pass --dest-creds
+  # because runner authfiles are not visible inside nix run's sandbox.
+  nix run --impure "${nix_build_args[@]}" \
+    "$repo_root#${attr}.copyToRegistry" -- \
+    --dest-creds "${user}:${password}"
 }
 
 case "$push_image" in
   0)
     nix build "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image" --no-link
     ;;
-  1 | both)
-    if ! command -v skopeo >/dev/null 2>&1; then
-      echo "build-postgres18-cnpg-image.sh: skopeo required for PUSH=${push_image}" >&2
-      exit 1
-    fi
-
-    image_json="$(
-      nix build "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image" --print-out-paths --no-link
-    )"
-    skopeo_copy "$image_json" "$INTERNAL_TAG"
-
-    if [[ "$push_image" == "both" ]]; then
-      skopeo_copy "$image_json" "$GHCR_TAG"
-    fi
+  1)
+    push_with_creds postgresql-18-cnpg-image \
+      "${REGISTRY_USER:-}" "${REGISTRY_PASSWORD:-}"
+    ;;
+  both)
+    push_with_creds postgresql-18-cnpg-image \
+      "${REGISTRY_USER:-}" "${REGISTRY_PASSWORD:-}"
+    push_with_creds postgresql-18-cnpg-image-ghcr \
+      "${GHCR_USER:-}" "${GHCR_TOKEN:-}"
     ;;
   *)
     echo "build-postgres18-cnpg-image.sh: unknown PUSH=$push_image (expected 0, 1, or both)" >&2
