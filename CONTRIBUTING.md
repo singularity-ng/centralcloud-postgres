@@ -6,7 +6,7 @@ be small, pinned, and easy to audit.
 ## Requirements
 
 - Nix with flakes enabled (nixos-26.05 / `nix develop`).
-- Image publish uses **nix2container** `copyToRegistry` — no docker client in the dev shell.
+- Image publish uses **nix2container** + host **skopeo** — no docker client in the dev shell.
 - Remote registry smoke (`just smoke-image` after push) uses **skopeo on the CI runner** only.
 
 Enter the dev shell:
