@@ -27,13 +27,10 @@ fi
 skopeo_copy() {
   local image_json="$1"
   local destination="$2"
-  local -a auth_args=()
 
-  if [[ -n "${REGISTRY_AUTH_FILE:-}" ]]; then
-    auth_args+=(--authfile "$REGISTRY_AUTH_FILE")
-  fi
-
-  skopeo --insecure-policy "${auth_args[@]}" copy "nix:${image_json}" "docker://${destination}"
+  # REGISTRY_AUTH_FILE is set by CI after skopeo login; skopeo copy reads it
+  # from the environment (there is no --authfile flag on copy).
+  skopeo --insecure-policy copy "nix:${image_json}" "docker://${destination}"
 }
 
 case "$push_image" in
