@@ -1,8 +1,8 @@
 # Builds and publishes the CentralCloud PostgreSQL 18 CNPG image on version tags
-# AND on pushes to the default branch — so the canonical operand image stays
+# AND on pushes to the default branch, so the canonical operand image stays
 # fresh in both the internal registry and the GHCR public mirror.
 #
-# Produces (same digest in both):
+# Produces (same digest in both registries when GHCR secrets are present):
 #   git.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext
 #   ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext
 #
@@ -21,19 +21,29 @@ on:
       - "v*"
   workflow_dispatch:
 
-env:
-  REGISTRY: git.infra.centralcloud.com
-  IMAGE: centralcloud/centralcloud-postgres
-  TAG: 18-cnpg-ext
-  GHCR_REGISTRY: ghcr.io
-  GHCR_IMAGE: singularity-ng/centralcloud-postgres
-
 jobs:
   publish:
     name: Build & push postgres image
-    runs-on: self-hosted
+    # Host Nix via forgejo-runner (/nix socket). Do not use
+    # cachix/install-nix-action — data.forgejo.org does not mirror it.
+    runs-on: [nix, nixos-26.05, self-hosted]
+    env:
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
+      XDG_CONFIG_HOME: /tmp/.config
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify runner-provided Nix
+        run: |
+          set -euo pipefail
+          which nix
+          nix --version
+          mkdir -p "$XDG_CONFIG_HOME/nix"
+          if ! grep -qF 'experimental-features = nix-command flakes' "$XDG_CONFIG_HOME/nix/nix.conf" 2>/dev/null; then
+            echo 'experimental-features = nix-command flakes' >> "$XDG_CONFIG_HOME/nix/nix.conf"
+            echo 'accept-flake-config = true' >> "$XDG_CONFIG_HOME/nix/nix.conf"
+          fi
 
       - name: Precheck — required secrets present
         env:
@@ -63,29 +73,28 @@ jobs:
             echo "PUSH_TARGET=both" >> "$GITHUB_ENV"
           fi
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          extra_nix_config: |
-            accept-flake-config = true
-
       - name: Login to internal registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.REGISTRY_USER }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+        env:
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$REGISTRY_PASSWORD" |
+            skopeo login --username "$REGISTRY_USER" --password-stdin git.infra.centralcloud.com
 
       - name: Login to GHCR
         if: env.PUSH_TARGET == 'both'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.GHCR_REGISTRY }}
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_TOKEN }}
+        env:
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" |
+            skopeo login --username "$GHCR_USER" --password-stdin ghcr.io
 
       - name: Build and push image(s)
         run: |
+          set -euo pipefail
           if [ "${PUSH_TARGET}" = "both" ]; then
             PUSH=both ./scripts/build-postgres18-cnpg-image.sh
           else
