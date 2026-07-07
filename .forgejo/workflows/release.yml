@@ -123,7 +123,8 @@ jobs:
             -o spdx-json=dist/sbom.spdx.json
 
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        uses: actions/upload-artifact@v3
         with:
           name: sbom
           path: dist/sbom.spdx.json

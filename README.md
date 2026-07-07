@@ -117,17 +117,14 @@ Provision the GHCR secrets to keep the public mirror in sync (the SF
 test harness defaults to the GHCR tag because the internal registry
 requires VPN/cluster network).
 
-To provision via the Forgejo CLI:
+To provision registry push credentials (standalone OCI registry at
+`registry.infra.centralcloud.com`, not Forgejo Packages):
 
 ```sh
-forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
-    secret set REGISTRY_USER "ci-runner"
-forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
-    secret set REGISTRY_PASSWORD "$REGISTRY_PAT"
-forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
-    secret set GHCR_USER "mikkihugo"
-forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
-    secret set GHCR_TOKEN "$GHCR_PAT"
+user=$(bao kv get -mount=kv -field=push_username tenants/shared/registry)
+pass=$(bao kv get -mount=kv -field=push_password tenants/shared/registry)
+tea actions secrets create -r centralcloud/centralcloud-postgres REGISTRY_USER "$user"
+tea actions secrets create -r centralcloud/centralcloud-postgres REGISTRY_PASSWORD "$pass"
 ```
 
 ## Public Artifacts
