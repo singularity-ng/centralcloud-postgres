@@ -79,8 +79,11 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
         run: |
           set -euo pipefail
+          authfile="${XDG_CONFIG_HOME}/containers/auth.json"
+          mkdir -p "$(dirname "$authfile")"
           printf '%s' "$REGISTRY_PASSWORD" |
-            skopeo login --username "$REGISTRY_USER" --password-stdin git.infra.centralcloud.com
+            skopeo login --authfile "$authfile" --username "$REGISTRY_USER" --password-stdin git.infra.centralcloud.com
+          echo "REGISTRY_AUTH_FILE=$authfile" >> "$GITHUB_ENV"
 
       - name: Login to GHCR
         if: env.PUSH_TARGET == 'both'
@@ -89,10 +92,15 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           set -euo pipefail
+          authfile="${REGISTRY_AUTH_FILE:-${XDG_CONFIG_HOME}/containers/auth.json}"
+          mkdir -p "$(dirname "$authfile")"
           printf '%s' "$GHCR_TOKEN" |
-            skopeo login --username "$GHCR_USER" --password-stdin ghcr.io
+            skopeo login --authfile "$authfile" --username "$GHCR_USER" --password-stdin ghcr.io
+          echo "REGISTRY_AUTH_FILE=$authfile" >> "$GITHUB_ENV"
 
       - name: Build and push image(s)
+        env:
+          REGISTRY_AUTH_FILE: ${{ env.REGISTRY_AUTH_FILE }}
         run: |
           set -euo pipefail
           if [ "${PUSH_TARGET}" = "both" ]; then
@@ -102,10 +110,12 @@ jobs:
           fi
 
       - name: Generate SBOM
+        env:
+          REGISTRY_AUTH_FILE: ${{ env.REGISTRY_AUTH_FILE }}
         run: |
           set -euo pipefail
           mkdir -p dist
-          nix shell nixpkgs#syft -c syft \
+          nix shell nixpkgs#syft --accept-flake-config -c syft \
             registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext \
             -o spdx-json=dist/sbom.spdx.json
 

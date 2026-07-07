@@ -20,6 +20,12 @@ if [[ "$use_remote_builders" != "1" ]]; then
   nix_build_args+=(--option builders "")
 fi
 
+# copyToRegistry shells out to skopeo; the login step must use the same
+# authfile and nix run must be impure so the sandboxed skopeo can read it.
+if [[ "$push_image" != "0" ]]; then
+  nix_build_args+=(--impure --accept-flake-config)
+fi
+
 case "$push_image" in
   0)
     nix build "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image" --no-link
