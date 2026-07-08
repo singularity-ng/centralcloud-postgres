@@ -16,10 +16,8 @@
 #   CNPG_IMAGE            full image:tag@sha256:…  (default: prod digest)
 #
 # Purpose: catch the silent-failure classes (read-replica staleness, primary
-# failover, PITR) that single-instance dev never surfaces. Day-to-day dev
-# stays on the plain-docker `centralcloud-ops-dev-db` for speed. This
-# script is the opt-in for replication/failover work and the weekly CI
-# chaos test.
+# failover, PITR) that single-instance dev never surfaces. Use this only for
+# replication/failover work and the weekly CI chaos test.
 set -euo pipefail
 
 CLUSTER_NAME="${CLUSTER_NAME:-centralcloud-dev}"
@@ -104,9 +102,10 @@ kubectl wait --for=condition=Ready pod \
 # 5. Create the test database the integration suite uses.
 #    Runs psql through the primary pod directly so we don't depend on the
 #    `kubectl-cnpg` plugin (not in nixpkgs; would add 50 MB to the dev shell).
+primary_pod="$(kubectl get pod -n "$NAMESPACE" -l cnpg.io/cluster=ops-postgres,role=primary \
+  -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec -n "$NAMESPACE" \
-  "$(kubectl get pod -n "$NAMESPACE" -l cnpg.io/cluster=ops-postgres,role=primary \
-    -o jsonpath='{.items[0].metadata.name}')" \
+  "$primary_pod" \
   -c postgres -- psql -U postgres -d centralcloud_ops \
   -c "CREATE DATABASE centralcloud_ops_test;" 2>/dev/null || true
 

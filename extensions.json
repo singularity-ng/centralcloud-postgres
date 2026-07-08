@@ -129,8 +129,7 @@
       "create_extension": "CREATE EXTENSION IF NOT EXISTS pg_duckdb;",
       "category": "analytics",
       "enabled_by_default": false,
-      "bundled": false,
-      "notes": "Catalog only — DuckDB submodule build not yet in the CNPG image bundle. Embeds DuckDB for vectorized OLAP; enable only on analytics-facing clusters after packaging lands."
+      "notes": "DuckDB-powered in-process OLAP analytics. Built against the locked nixos-26.05 DuckDB 1.5.2 library; databases must opt in with shared_preload_libraries and CREATE EXTENSION."
     },
     {
       "name": "wrappers",

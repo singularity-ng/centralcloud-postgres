@@ -15,7 +15,7 @@ def render(catalog: dict) -> str:
     for item in catalog["extensions"]:
         preload = ", ".join(f"`{name}`" for name in item["shared_preload_libraries"]) or "No"
         created = "Yes" if item["enabled_by_default"] else "No"
-        available = "Yes" if item.get("bundled", True) else "No (catalog only)"
+        available = "Yes" if item.get("available", True) else "No"
         rows.append(
             "| `{name}` | `{package}` | {available} | {preload} | {created} | {notes} |".format(
                 name=item["name"],

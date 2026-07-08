@@ -12,12 +12,21 @@ flake for reproducible builds and a GHCR image for Kubernetes users who want a
 ready CloudNativePG operand image with a broader extension set than the upstream
 base image.
 
-## Packages
+## Packages And Image
 
-- `postgresql-18-extension-bundle`: PostgreSQL 18 extension files and generated catalog.
-- `postgresql-18-extension-closure`: runtime closure for the extension bundle.
+- `postgresql-18-extension-bundle-platform`: fleet extension files and generated catalog.
+- `postgresql-18-extension-closure`: runtime closure for the platform bundle.
+- `postgresql-18-cnpg-image`: CloudNativePG operand image tagged `18-cnpg-ext`.
 
-Included extension packages:
+There is one published operand image. It carries the buildable extension files
+so clusters can share one image, but databases still opt in with
+`shared_preload_libraries` and `CREATE EXTENSION`.
+
+`pg_duckdb` is included and patched to build against the locked `nixos-26.05`
+DuckDB `1.5.2` library. It is only available in the image; databases must still
+set `shared_preload_libraries = 'pg_duckdb'` and run `CREATE EXTENSION`.
+
+The platform image includes:
 
 - TimescaleDB
 - pgvector
@@ -29,6 +38,10 @@ Included extension packages:
 - pg_cron
 - pg_repack
 - pg_partman
+- pg_ivm
+- pg_duckdb
+- wrappers
+- RUM
 - hypopg
 - pg_hint_plan
 - plpgsql_check
@@ -43,6 +56,7 @@ Included extension packages:
 - pgcrypto
 - pg_prewarm
 - pgaudit
+- PL/Python runtime files
 
 The packages make extensions available. Databases still choose their own
 `shared_preload_libraries` and `CREATE EXTENSION` list.
@@ -71,7 +85,7 @@ This section is generated from `extensions.json`.
 | `pg_repack` | `pg_repack` | Yes | No | No | Online table and index reorganization. |
 | `pg_partman` | `pg_partman` | Yes | No | No | Partition management extension. |
 | `pg_ivm` | `pg_ivm` | Yes | No | No | Incremental materialized view maintenance — refreshes only changed rows instead of full REFRESH. High value for analytics aggregations (finops cost rollups, dashboards) that would otherwise need full recompute on every write. |
-| `pg_duckdb` | `pg_duckdb` | No (catalog only) | `pg_duckdb` | No | Catalog only — DuckDB submodule build not yet in the CNPG image bundle. Embeds DuckDB for vectorized OLAP; enable only on analytics-facing clusters after packaging lands. |
+| `pg_duckdb` | `pg_duckdb` | Yes | `pg_duckdb` | No | DuckDB-powered in-process OLAP analytics. Built against the locked nixos-26.05 DuckDB 1.5.2 library; databases must opt in with shared_preload_libraries and CREATE EXTENSION. |
 | `wrappers` | `wrappers` | Yes | No | No | Supabase FDW collection — S3/Garage, Stripe, BigQuery, Firebase, Airtable, Clickhouse, Redis as foreign tables. Useful for finops collector reading from Garage S3 or external billing APIs directly via SQL. |
 | `rum` | `rum` | Yes | No | No | RUM index access method — full-text search with timestamp ordering in a single index scan. Faster than GIN + ORDER BY ts_rank for time-sorted full-text queries. |
 | `hypopg` | `hypopg` | Yes | No | No | Hypothetical indexes for query planning. |
@@ -117,14 +131,17 @@ Provision the GHCR secrets to keep the public mirror in sync (the SF
 test harness defaults to the GHCR tag because the internal registry
 requires VPN/cluster network).
 
-To provision registry push credentials (standalone OCI registry at
-`registry.infra.centralcloud.com`, not Forgejo Packages):
+To provision via the Forgejo CLI:
 
 ```sh
-user=$(bao kv get -mount=kv -field=push_username tenants/shared/registry)
-pass=$(bao kv get -mount=kv -field=push_password tenants/shared/registry)
-tea actions secrets create -r centralcloud/centralcloud-postgres REGISTRY_USER "$user"
-tea actions secrets create -r centralcloud/centralcloud-postgres REGISTRY_PASSWORD "$pass"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set REGISTRY_USER "ci-runner"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set REGISTRY_PASSWORD "$REGISTRY_PAT"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set GHCR_USER "mikkihugo"
+forgejo --token "$FORGEJO_PAT" -r centralcloud/centralcloud-postgres \
+    secret set GHCR_TOKEN "$GHCR_PAT"
 ```
 
 ## Public Artifacts
@@ -153,16 +170,22 @@ CloudNativePG itself.
 nix build .#postgresql-18-extension-bundle
 ```
 
+Build the fleet extension bundle:
+
+```sh
+just build-bundles
+```
+
 Build the OCI image with `nix2container`:
 
 ```sh
 nix build .#postgresql-18-cnpg-image
 ```
 
-Load the image into the local Docker daemon:
+Build the OCI image:
 
 ```sh
-nix run .#postgresql-18-cnpg-image.copyToDockerDaemon
+just build-images
 ```
 
 The provided `just` and image-build commands disable private remote builders by
@@ -170,13 +193,13 @@ default so public builds do not accidentally SSH into CentralCloud hosts. Set
 `USE_REMOTE_BUILDERS=1` only when intentionally using your own configured Nix
 builders.
 
-Build and load a CloudNativePG-compatible image:
+Build a CloudNativePG-compatible image:
 
 ```sh
 just build-cnpg-image
 ```
 
-Push the image:
+Push the default platform image:
 
 ```sh
 PUSH=1 just build-cnpg-image
