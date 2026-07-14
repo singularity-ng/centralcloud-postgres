@@ -124,7 +124,7 @@ jobs:
 
       - name: Upload SBOM artifact
         continue-on-error: true
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom
           path: dist/sbom.spdx.json

@@ -239,8 +239,8 @@ _: let
         plpgsql_check
         rum
       ];
-      # VectorDrive CNPG operand glue — no vchord/age/timescaledb (owned by vectordrive pgrx).
-      vd-ops = [
+      # Non-vector operational extensions shared by both fleet images.
+      shared-ops = [
         pg_cron
         pgmq
         pgaudit
@@ -288,7 +288,7 @@ _: let
       "plpgsql_check.control"
       "rum.control"
     ];
-    vd-ops = [
+    shared-ops = [
       "pg_cron.control"
       "pgmq.control"
       "pgaudit.control"
@@ -336,20 +336,20 @@ in {
         "https://apt.postgresql.org/pub/repos/apt/pool/main/p/postgresql-18/postgresql-plpython3-18_18.4-1.pgdg13%2b1_amd64.deb"
         "sha256-SAOk+0OCbQFa9QnDttIIuo9YS+eiwV8Ej96pLRZNieo=")
       (deb
-        "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13_3.13.5-2%2bdeb13u2_amd64.deb"
-        "sha256-eS0OXipxP/TRXWWOYurPNJ7AhU7TKc7LFYRYttNEm2s=")
+        "https://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13_3.13.5-2%2bdeb13u3_amd64.deb"
+        "sha256-Dfel2aHE1YNKq3WU867pb/gKF+gREDcKc+f4BKCtF0c=")
       (deb
-        "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13-stdlib_3.13.5-2%2bdeb13u2_amd64.deb"
-        "sha256-V/91n9rYxaocyb/dJfa9eGLg5YVMl+c5EFB0p7x6vCM=")
+        "https://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13-stdlib_3.13.5-2%2bdeb13u3_amd64.deb"
+        "sha256-9OdZ26xJ2xbE8cNgFoSpIRoq8yEaP3vcBP/yY68Ipes=")
       (deb
-        "http://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13-minimal_3.13.5-2%2bdeb13u2_amd64.deb"
-        "sha256-8ZZDOk7vbX9OcNRXYcWOxqWeeYK59oPUUtxoOAI1UcU=")
+        "https://deb.debian.org/debian/pool/main/p/python3.13/libpython3.13-minimal_3.13.5-2%2bdeb13u3_amd64.deb"
+        "sha256-m+mk5Z1DrW4jc0m++9DRMeDPeYEjI7WsZCcFHO5+fKk=")
       (deb
-        "http://deb.debian.org/debian/pool/main/p/python3.13/python3.13_3.13.5-2%2bdeb13u2_amd64.deb"
-        "sha256-iC5Cj6EI335I7Wfu0If2W2A8VMC6mdCaIwc5ZvR8O4s=")
+        "https://deb.debian.org/debian/pool/main/p/python3.13/python3.13_3.13.5-2%2bdeb13u3_amd64.deb"
+        "sha256-ZpM1mG/WQdb2xTj1WPx1KiDB2BaIVvkLfjSnYVSE3NI=")
       (deb
-        "http://deb.debian.org/debian/pool/main/p/python3.13/python3.13-minimal_3.13.5-2%2bdeb13u2_amd64.deb"
-        "sha256-9ZXsiiST4V6s8N0VAgV3gs570cw0Rkc9vMicNCgkYtY=")
+        "https://deb.debian.org/debian/pool/main/p/python3.13/python3.13-minimal_3.13.5-2%2bdeb13u3_amd64.deb"
+        "sha256-O6+xvxZ0psj8UiluGxe1S2ZkAPxG9rHQ70wkuuvIg7s=")
     ];
   in
     pkgs.runCommand "postgresql-18-cnpg-extension-root" {

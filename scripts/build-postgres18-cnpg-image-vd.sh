@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the VectorDrive PostgreSQL 18 CNPG image (owned pgrx + vd-ops glue).
+# Build the VectorDrive PostgreSQL 18 CNPG image (owned pgrx + shared operations).
 #
 # Prerequisites:
 #   Package vectordrive extensions into nix/vectordrive-ext/ (or set
@@ -23,8 +23,18 @@ nix_build_args=()
 
 package="postgresql-18-cnpg-image-vd"
 
-internal_tag="$(nix eval --raw "$repo_root#$package.passthru.imageRef")"
-ghcr_tag="$(nix eval --raw "$repo_root#$package.passthru.ghcrImageRef")"
+if [[ -z "${VECTORDRIVE_EXT_PATH:-}" ]]; then
+  echo "build-postgres18-cnpg-image-vd.sh: VECTORDRIVE_EXT_PATH must point to the six-extension package output" >&2
+  exit 1
+fi
+if [[ ! -d "$VECTORDRIVE_EXT_PATH/lib" || ! -d "$VECTORDRIVE_EXT_PATH/share/extension" ]]; then
+  echo "build-postgres18-cnpg-image-vd.sh: invalid VECTORDRIVE_EXT_PATH=$VECTORDRIVE_EXT_PATH" >&2
+  exit 1
+fi
+nix_build_args+=(--impure)
+
+internal_tag="registry.infra.centralcloud.com/singularity-ng/vectordrive-postgres:18-cnpg"
+ghcr_tag="ghcr.io/singularity-ng/vectordrive-postgres:18-cnpg"
 
 if [[ "$use_remote_builders" != "1" ]]; then
   nix_build_args+=(--option builders "")
@@ -51,7 +61,7 @@ esac
 
 case "$smoke" in
   1)
-    ./scripts/smoke-image.sh "$internal_tag"
+    ./scripts/smoke-image.sh 1 "$internal_tag"
     ;;
   0)
     ;;

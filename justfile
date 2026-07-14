@@ -60,16 +60,13 @@ push-cnpg-image-mirror:
     PUSH=both ./scripts/build-postgres18-cnpg-image.sh
 
 build-cnpg-image-vd:
-    @echo "vectordrive image script not vendored yet; use: nix build .#postgresql-18-cnpg-image-vd" >&2
-    @exit 1
+    ./scripts/build-postgres18-cnpg-image-vd.sh
 
 push-cnpg-image-vd:
-    @echo "see build-cnpg-image-vd" >&2
-    @exit 1
+    PUSH=1 ./scripts/build-postgres18-cnpg-image-vd.sh
 
 push-cnpg-image-vd-mirror:
-    @echo "see build-cnpg-image-vd" >&2
-    @exit 1
+    PUSH=both ./scripts/build-postgres18-cnpg-image-vd.sh
 
 sbom:
     mkdir -p dist
@@ -79,7 +76,7 @@ install-hooks:
     lefthook install
 
 fmt:
-    nix fmt
+    alejandra flake.nix nix
 
 # Local CNPG dev cluster (k3d + CNPG). Same image digest as prod, primary
 # + replica, port-forwarded to localhost:5432 (rw) and :5433 (ro).

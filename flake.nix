@@ -79,7 +79,7 @@
           os = "linux";
           inherit arch;
         };
-        extensionRoot = postgres18.cnpgExtensionRoot pkgs;
+        extensionRoot = postgres18.cnpgExtensionRoot pkgs "platform";
         cnpgImageConfig = {
           fromImage = cnpgBase;
           inherit arch;
@@ -114,15 +114,33 @@
           }
           // cnpgImageConfig;
 
-        # VectorDrive extension layer.
-        # Reads pre-built pgrx outputs from VECTORDRIVE_EXT_PATH. Producing
-        # these outputs is a separate step: `nix develop` inside the
-        # vectordrive repo, then
-        # `cd crates/postgres/core && cargo pgrx install
-        # --features pg18,default-profiles,routing --release` and copy the
-        # resulting .so/.control/.sql files into a path passed via
-        # VECTORDRIVE_EXT_PATH. Without that override, pure flake checks use
-        # an empty local placeholder so this optional image remains evaluable.
+        # VectorDrive owns the vector, graph, time-series, spatial, cache, and
+        # metering SQL extension families. The generic VChord image remains a
+        # separate product; only the non-vector shared-ops profile is shared.
+        requiredVectordriveExtensions = [
+          "vectordrive:vectordrive.so"
+          "vectordrive_graph:vectordrive_graph.so"
+          "vectordrive_timedrive:vectordrive_timedrive.so"
+          "vectordrive_gis:vectordrive_gis.so"
+          "cachedrive:cachedrive.so"
+          "vectordrive_meter:vectordrive_meter.so"
+        ];
+        vectordriveCollisionControls = [
+          "vector.control"
+          "vchord.control"
+          "vchord_bm25.control"
+          "pg_tokenizer.control"
+          "age.control"
+          "timescaledb.control"
+          "postgis.control"
+        ];
+        expectedSharedOpsControls = [
+          "pg_cron.control"
+          "pgmq.control"
+          "pgaudit.control"
+          "pg_repack.control"
+          "pg_partman.control"
+        ];
         vectordriveExtPath = let
           envPath = builtins.getEnv "VECTORDRIVE_EXT_PATH";
         in
@@ -138,22 +156,46 @@
           };
           dontBuild = true;
           installPhase = ''
+            for spec in ${pkgs.lib.escapeShellArgs requiredVectordriveExtensions}; do
+              extension="''${spec%%:*}"
+              library="''${spec#*:}"
+              test -f "$src/lib/$library" || {
+                echo "missing required VectorDrive library: $library" >&2
+                exit 1
+              }
+              test -f "$src/share/extension/$extension.control" || {
+                echo "missing required VectorDrive control: $extension.control" >&2
+                exit 1
+              }
+              sql_found=
+              for sql_file in "$src/share/extension/$extension"--*.sql; do
+                if test -f "$sql_file"; then
+                  sql_found=1
+                  break
+                fi
+              done
+              test -n "$sql_found" || {
+                echo "missing required VectorDrive SQL: $extension--*.sql" >&2
+                exit 1
+              }
+            done
+
+            for control in ${pkgs.lib.escapeShellArgs vectordriveCollisionControls}; do
+              test ! -e "$src/share/extension/$control" || {
+                echo "VectorDrive extension payload duplicates excluded family: $control" >&2
+                exit 1
+              }
+            done
+
             mkdir -p $out/usr/lib/postgresql/18/lib $out/usr/share/postgresql/18/extension
-            for so in $src/lib/*.so; do
-              [ -e "$so" ] && cp -v "$so" $out/usr/lib/postgresql/18/lib/
-            done
-            for f in $src/share/extension/*; do
-              [ -e "$f" ] && cp -v "$f" $out/usr/share/postgresql/18/extension/
-            done
+            cp -v $src/lib/*.so $out/usr/lib/postgresql/18/lib/
+            cp -v $src/share/extension/* $out/usr/share/postgresql/18/extension/
           '';
         };
-        # Slim CNPG image with ONLY the VectorDrive pgrx extension layered on
-        # top of the bare upstream CNPG base. Skips timescaledb / vchord /
-        # vchord_bm25 / pg_tokenizer / age / pgmq / etc — VectorDrive supplies
-        # its own vector + sparse types via pgrx (sparsevec_in_wrapper etc).
-        # Add to `extraExtensionLayers` below if a deployment turns out to need
-        # a specific extra extension; do not blanket-include the full bundle.
-        extraExtensionLayers = [];
+        sharedOpsRoot = assert pkgs.lib.assertMsg
+        (postgres18.extensionProfileControls.shared-ops == expectedSharedOpsControls)
+        "shared-ops must contain only the five approved non-vector operational extensions";
+          postgres18.cnpgExtensionRoot pkgs "shared-ops";
         cnpgImageVd = n2c.buildImage {
           # vectordrive is a singularity-ng product; image is namespaced by the
           # product org (matches the cluster + the live registry repo), even
@@ -163,7 +205,7 @@
           fromImage = cnpgBase;
           inherit arch;
           maxLayers = 32;
-          copyToRoot = [vectordriveExtension] ++ extraExtensionLayers;
+          copyToRoot = [vectordriveExtension sharedOpsRoot];
           config = {
             User = "26";
             Cmd = ["bash"];
@@ -173,22 +215,23 @@
             ];
             Labels = {
               "org.opencontainers.image.title" = "VectorDrive PostgreSQL 18 (CNPG)";
-              "org.opencontainers.image.description" = "Slim CNPG PG18 + VectorDrive pgrx extension (vectordrive_code_search + 377 SQL functions, own halfvec/sparsevec, no vchord/timescaledb)";
+              "org.opencontainers.image.description" = "CNPG PG18 with six VectorDrive-owned SQL extensions plus non-vector shared operations extensions; no VChord, pgvector, AGE, TimescaleDB, or PostGIS";
               "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/singularity-ng/vectordrive";
               "org.opencontainers.image.licenses" = "MIT";
               "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie";
+              "org.centralcloud.postgres.extension-profile" = "vectordrive+shared-ops";
             };
           };
         };
       in {
-        postgresql-18-extension-bundle = postgres18.extensionBundle pkgs;
+        postgresql-18-extension-bundle = postgres18.extensionBundle pkgs "platform";
         postgresql-18-extension-closure = postgres18.extensionClosure pkgs;
         postgresql-18-cnpg-image = cnpgImage;
         postgresql-18-cnpg-image-ghcr = cnpgImageGhcr;
         postgresql-18-cnpg-image-vd = cnpgImageVd;
         vectordrive-extension-layer = vectordriveExtension;
         centralcloud-postgres-dev-cluster = devCluster;
-        default = postgres18.extensionBundle pkgs;
+        default = postgres18.extensionBundle pkgs "platform";
       }
     );
 

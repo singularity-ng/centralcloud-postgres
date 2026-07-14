@@ -35,9 +35,14 @@ its packaged extension set. Runtime `Cluster` manifests live in `/srv/infra`.
 - Rebuild/publish a new image when package sources, hashes, base image manifest,
   runtime libraries, or Nix inputs change. A SQL-only fix does not update the
   image.
-- Keep one fleet image unless there is a measured size, licensing, or runtime
-  reason to split. Extension files available in the image are not enabled until
-  a database sets required preload libraries and runs `CREATE EXTENSION`.
+- Keep two explicit fleet products in this repo: the generic VChord-based
+  `centralcloud-postgres` image and the VectorDrive image. The VectorDrive image
+  owns its vector, graph, time-series, spatial, cache, and metering extension
+  families; it may share only the non-vector `shared-ops` profile with the generic
+  image. Do not add pgvector, VChord/BM25/tokenizer, AGE, TimescaleDB, or PostGIS
+  to the VectorDrive image.
+- Extension files available in either image are not enabled until a database
+  sets required preload libraries and runs `CREATE EXTENSION`.
   Keep API-fragile extensions such as `pg_duckdb` tied to build proof against
   the locked `nixos-26.05` DuckDB before changing versions or patching strategy.
 - Before changing versions, check upstream release state and local consumers.
