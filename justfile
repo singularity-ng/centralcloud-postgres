@@ -1,5 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+mod vcs 'just/vcs.just'
+
 # Fast lint (shell + workflows + docs). Nix format/lint runs in lefthook pre-commit
 # and in `nix flake check` via `just check`.
 lint:
@@ -26,7 +28,12 @@ lint-shell:
     fi
 
 check:
-    nix flake check --option builders ""
+    nix flake check path:. --option builders ""
+
+check-vcs:
+    shfmt -d scripts/repo-vcs.sh scripts/repo-vcs-push.sh scripts/test-repo-vcs.sh
+    shellcheck scripts/repo-vcs.sh scripts/repo-vcs-push.sh scripts/test-repo-vcs.sh
+    just vcs test
 
 docs:
     ./scripts/generate-extension-docs.py
