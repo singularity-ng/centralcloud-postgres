@@ -25,7 +25,7 @@ fail() {
 required_recipes=(
 	status diff log show bookmarks workspace-list tracked-files fetch push new rebase describe
 	bookmark-set bookmark-drop restore workspace-create workspace-update-stale
-	workspace-drop workspace-prune-orphan test
+	workspace-close workspace-prune-orphan test
 )
 recipe_summary="$(just --justfile "$root/justfile" --summary)"
 for recipe in "${required_recipes[@]}"; do
@@ -91,6 +91,7 @@ printf 'clean again\n' >"$repo/example.txt"
 REPO_VCS_ROOT="$repo" bash "$helper" status >/dev/null
 REPO_VCS_ROOT="$repo" bash "$helper" describe 'test: seed facade fixture' >/dev/null
 REPO_VCS_ROOT="$repo" bash "$helper" bookmark-set fixture-main >/dev/null
+REPO_VCS_ROOT="$repo" bash "$helper" bookmark-set main >/dev/null
 if ! REPO_VCS_ROOT="$repo" bash "$helper" bookmarks | grep -q '^fixture-main:'; then
 	fail "bookmark-set was not visible through bookmarks"
 fi
@@ -102,15 +103,40 @@ REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
 	bash "$helper" workspace-create cleanup-check @ >/dev/null
 [ -d "$workspace_root/cleanup-check" ] || fail "workspace-create omitted its directory"
 REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
-	bash "$helper" workspace-drop cleanup-check >/dev/null
-[ ! -e "$workspace_root/cleanup-check" ] || fail "workspace-drop left its directory behind"
+	bash "$helper" workspace-close cleanup-check >/dev/null
+[ ! -e "$workspace_root/cleanup-check" ] || fail "workspace-close left its directory behind"
+
+REPO_VCS_ROOT="$repo" bash "$helper" bookmark-drop main >/dev/null
+REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
+	bash "$helper" workspace-create missing-main-check fixture-main >/dev/null
+if REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
+	bash "$helper" workspace-close missing-main-check >/dev/null 2>&1; then
+	fail "workspace-close treated a revset error as safe"
+fi
+REPO_VCS_ROOT="$repo" bash "$helper" bookmark-set main fixture-main >/dev/null
+REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
+	bash "$helper" workspace-close missing-main-check >/dev/null
+
+REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
+	bash "$helper" workspace-create unintegrated-check @ >/dev/null
+printf 'unique\n' >"$workspace_root/unintegrated-check/unique.txt"
+jj --repository "$workspace_root/unintegrated-check" describe -m 'test: unique workspace work' >/dev/null
+jj --repository "$workspace_root/unintegrated-check" new >/dev/null
+if REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
+	bash "$helper" workspace-close unintegrated-check >/dev/null 2>&1; then
+	fail "workspace-close discarded clean but unintegrated jj history"
+fi
+jj --repository "$repo" new main "unintegrated-check@-" >/dev/null
+jj --repository "$repo" bookmark set main -r @ >/dev/null
+REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
+	bash "$helper" workspace-close unintegrated-check >/dev/null
 
 REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
 	bash "$helper" workspace-create dirty-check @ >/dev/null
 printf 'uncommitted\n' >"$workspace_root/dirty-check/dirty.txt"
 if REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
-	bash "$helper" workspace-drop dirty-check >/dev/null 2>&1; then
-	fail "workspace-drop accepted a dirty workspace"
+	bash "$helper" workspace-close dirty-check >/dev/null 2>&1; then
+	fail "workspace-close accepted a dirty workspace"
 fi
 
 REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
@@ -121,14 +147,14 @@ REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
 ) &
 live_pid=$!
 if REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
-	bash "$helper" workspace-drop live-check >/dev/null 2>&1; then
+	bash "$helper" workspace-close live-check >/dev/null 2>&1; then
 	kill "$live_pid" 2>/dev/null || true
-	fail "workspace-drop accepted a workspace owned by a live process"
+	fail "workspace-close accepted a workspace owned by a live process"
 fi
 kill "$live_pid" 2>/dev/null || true
 wait "$live_pid" 2>/dev/null || true
 REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
-	bash "$helper" workspace-drop live-check >/dev/null
+	bash "$helper" workspace-close live-check >/dev/null
 
 if REPO_VCS_ROOT="$repo" REPO_VCS_WORKSPACE_ROOT="$workspace_root" \
 	bash "$helper" workspace-create '../escape' @ >/dev/null 2>&1; then

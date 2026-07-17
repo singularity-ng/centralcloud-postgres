@@ -75,8 +75,8 @@ workspace-update-stale NAME:
     @REPO_VCS_ROOT="{{ repo }}" {{ runner }} workspace-update-stale "$1"
 
 # Remove a clean, registered, non-current workspace.
-workspace-drop NAME:
-    @REPO_VCS_ROOT="{{ repo }}" {{ runner }} workspace-drop "$1"
+workspace-close NAME:
+    @REPO_VCS_ROOT="{{ repo }}" {{ runner }} workspace-close "$1"
 
 # Remove an unregistered jj workspace directory only when it has no working copy.
 workspace-prune-orphan NAME:
@@ -85,5 +85,4 @@ workspace-prune-orphan NAME:
 # Run the public VCS facade contract.
 test:
     @REPO_VCS_ROOT="{{ repo }}" {{ runner }} contract-test
-
 

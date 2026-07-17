@@ -19,7 +19,7 @@ die() {
 }
 
 usage() {
-	die "usage: $0 {backend|root|changed-files|tracked-files|diff-check|status|diff|log|show|bookmarks|workspace-list|fetch|push|new|rebase|describe|bookmark-set|bookmark-drop|restore|workspace-create|workspace-update-stale|workspace-drop|workspace-prune-orphan|contract-test} [args...]"
+	die "usage: $0 {backend|root|changed-files|tracked-files|diff-check|status|diff|log|show|bookmarks|workspace-list|fetch|push|new|rebase|describe|bookmark-set|bookmark-drop|restore|workspace-create|workspace-update-stale|workspace-close|workspace-prune-orphan|contract-test} [args...]"
 }
 
 candidate_root() {
@@ -93,6 +93,13 @@ workspace_has_live_cwd() {
 		esac
 	done
 	return 1
+}
+
+jj_workspace_has_unintegrated_history() {
+	local name="$1" revisions
+	revisions="$(jj --repository "$root" log --ignore-working-copy --no-graph \
+		-r "::${name}@ ~ ::main ~ empty()" -T 'commit_id')" || return 0
+	[ -n "$revisions" ]
 }
 
 git_workspace_registered() {
@@ -368,7 +375,7 @@ workspace-update-stale)
 		git -C "$root" worktree repair "$workspace_path"
 	fi
 	;;
-workspace-drop)
+workspace-close)
 	[ "$#" -eq 1 ] || usage
 	name="$1"
 	validate_workspace_name "$name"
@@ -380,16 +387,18 @@ workspace-drop)
 	if [ "$backend" = "jj" ]; then
 		[ -e "$workspace_path/.jj" ] || die "workspace path is not jj: $workspace_path"
 		jj --repository "$root" workspace list | cut -d: -f1 | grep -Fxq "$name" ||
-			die "refusing to drop unregistered workspace: $name"
-		[ -z "$(jj --repository "$workspace_path" diff --summary)" ] ||
-			die "refusing to drop dirty workspace: $name"
+			die "refusing to close unregistered workspace: $name"
+		jj --repository "$workspace_path" status >/dev/null ||
+			die "refusing to close workspace with unreadable state: $name"
+		jj_workspace_has_unintegrated_history "$name" &&
+			die "refusing to close workspace with dirty or committed non-empty history not integrated into main: $name"
 		jj --repository "$root" workspace forget "$name"
 		rm -rf -- "$workspace_path"
 	else
 		[ -e "$workspace_path/.git" ] || die "workspace path is not Git: $workspace_path"
-		git_workspace_registered "$workspace_path" || die "refusing to drop unregistered worktree: $name"
+		git_workspace_registered "$workspace_path" || die "refusing to close unregistered worktree: $name"
 		[ -z "$(git -C "$workspace_path" status --porcelain)" ] ||
-			die "refusing to drop dirty worktree: $name"
+			die "refusing to close dirty worktree: $name"
 		git -C "$root" worktree remove "$workspace_path"
 	fi
 	;;
