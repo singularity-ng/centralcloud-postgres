@@ -312,7 +312,8 @@
 
           shellHook = ''
             echo "CentralCloud Postgres dev shell (nixos-26.05)"
-            echo "  just check         # nix flake check (format, lint, image)"
+            echo "  just check         # fast checks only (format, lint, docs, workflows)"
+            echo "  just check-full    # nix flake check incl. extension bundle + image (CI)"
             echo "  just install-hooks # lefthook (also auto on first nix develop)"
             echo "  just cluster-up    # k3d + CNPG (same image digest as prod)"
             echo "  just cluster-down  # tear down"

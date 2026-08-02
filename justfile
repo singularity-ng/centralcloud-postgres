@@ -3,7 +3,7 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 mod vcs 'just/vcs.just'
 
 # Fast lint (shell + workflows + docs). Nix format/lint runs in lefthook pre-commit
-# and in `nix flake check` via `just check`.
+# and in `just check` (batched fast checks; heavy artifacts via `just check-full`).
 lint:
     ./scripts/generate-extension-docs.py --check
     just lint-workflows
@@ -27,7 +27,17 @@ lint-shell:
       shellcheck -S error "${files[@]}"
     fi
 
+# Fast contract checks only (format/lint/generated-docs/workflows) in ONE
+# batched nix invocation — one flake eval, parallel builds. The heavy
+# artifact checks (extension-bundle, cnpg-image) stay in CI
+# (.forgejo/workflows/ci.yml runs full `nix flake check`). Used by lefthook
+# pre-push. `--option builders ""` forces local builds, matching CI/scripts.
 check:
+    nix build --option builders "" .#checks.$(nix eval --impure --raw --expr builtins.currentSystem).{format,lint,generated-docs,workflows} --no-link
+
+# Full `nix flake check` including heavy artifacts (extension-bundle +
+# cnpg-image). CI covers this; run locally when touching packaging/image.
+check-full:
     nix flake check path:. --option builders ""
 
 check-vcs:

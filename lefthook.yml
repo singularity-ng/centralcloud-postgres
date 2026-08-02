@@ -69,5 +69,7 @@ pre-commit:
 pre-push:
   parallel: false
   commands:
-    flake-check:
+    fast-checks:
+      # Fast contract checks only (format/lint/docs/workflows) in one batched
+      # nix build; heavy artifacts (extension-bundle, cnpg-image) run in CI.
       run: just check
