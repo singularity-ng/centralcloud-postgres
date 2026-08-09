@@ -17,7 +17,7 @@ push_image="${PUSH:-0}"
 use_remote_builders="${USE_REMOTE_BUILDERS:-0}"
 nix_build_args=(--accept-flake-config)
 
-INTERNAL_TAG="registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext"
+INTERNAL_TAG="registry.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext"
 GHCR_TAG="ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext"
 
 if [[ "$use_remote_builders" != "1" ]]; then

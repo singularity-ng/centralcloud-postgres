@@ -3,7 +3,7 @@
 # fresh in both the internal registry and the GHCR public mirror.
 #
 # Produces (same digest in both registries when GHCR secrets are present):
-#   git.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext
+#   git.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext
 #   ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext
 #
 # Secrets required (repo or org level):
@@ -82,7 +82,7 @@ jobs:
           authfile="${XDG_CONFIG_HOME}/containers/auth.json"
           mkdir -p "$(dirname "$authfile")"
           printf '%s' "$REGISTRY_PASSWORD" |
-            skopeo login --authfile "$authfile" --username "$REGISTRY_USER" --password-stdin registry.infra.centralcloud.com
+            skopeo login --authfile "$authfile" --username "$REGISTRY_USER" --password-stdin registry.centralcloud.net
           echo "REGISTRY_AUTH_FILE=$authfile" >> "$GITHUB_ENV"
 
       - name: Login to GHCR
@@ -119,7 +119,7 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           nix shell nixpkgs#syft --accept-flake-config -c syft \
-            registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext \
+            registry.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext \
             -o spdx-json=dist/sbom.spdx.json
 
       - name: Upload SBOM artifact

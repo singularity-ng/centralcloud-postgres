@@ -24,7 +24,7 @@ CLUSTER_NAME="${CLUSTER_NAME:-centralcloud-dev}"
 PG_PORT="${PG_PORT:-5432}"
 PG_RO_PORT="${PG_RO_PORT:-5433}"
 CNPG_OPERATOR_VERSION="${CNPG_OPERATOR_VERSION:-1.24.0}"
-CNPG_IMAGE="${CNPG_IMAGE:-registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext@sha256:9a380e9b3647f59a6b6d41697147aead388bed3051e7c9f58c18f117e05370eb}"
+CNPG_IMAGE="${CNPG_IMAGE:-registry.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext@sha256:9a380e9b3647f59a6b6d41697147aead388bed3051e7c9f58c18f117e05370eb}"
 NAMESPACE="${NAMESPACE:-databases}"
 
 chaos=0

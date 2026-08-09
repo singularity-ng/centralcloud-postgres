@@ -8,7 +8,7 @@
 # Modes (env vars):
 #   PUSH=0  (default) — build the OCI image derivation without publishing
 #   PUSH=1            — copy to the internal registry only
-#                       (registry.infra.centralcloud.com/singularity-ng/vectordrive-postgres:18-cnpg)
+#                       (registry.centralcloud.net/singularity-ng/vectordrive-postgres:18-cnpg)
 #   PUSH=both         — copy to BOTH the internal registry AND the GHCR mirror
 #                       (ghcr.io/singularity-ng/vectordrive-postgres:18-cnpg)
 #   USE_REMOTE_BUILDERS=1 — allow nix to dispatch to remote builders.
@@ -33,7 +33,7 @@ if [[ ! -d "$VECTORDRIVE_EXT_PATH/lib" || ! -d "$VECTORDRIVE_EXT_PATH/share/exte
 fi
 nix_build_args+=(--impure)
 
-internal_tag="registry.infra.centralcloud.com/singularity-ng/vectordrive-postgres:18-cnpg"
+internal_tag="registry.centralcloud.net/singularity-ng/vectordrive-postgres:18-cnpg"
 ghcr_tag="ghcr.io/singularity-ng/vectordrive-postgres:18-cnpg"
 
 if [[ "$use_remote_builders" != "1" ]]; then

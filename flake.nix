@@ -95,7 +95,7 @@
             Labels = {
               "org.opencontainers.image.title" = "CentralCloud PostgreSQL 18 CNPG Extensions";
               "org.opencontainers.image.description" = "CloudNativePG PostgreSQL 18 image with TimescaleDB, vector, BM25, AGE, and operations extensions";
-              "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/centralcloud/centralcloud-postgres";
+              "org.opencontainers.image.source" = "https://git.centralcloud.net/centralcloud/centralcloud-postgres";
               "org.opencontainers.image.licenses" = "MIT";
               "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie";
             };
@@ -103,7 +103,7 @@
         };
         cnpgImage =
           n2c.buildImage {
-            name = "registry.infra.centralcloud.com/centralcloud/centralcloud-postgres";
+            name = "registry.centralcloud.net/centralcloud/centralcloud-postgres";
             tag = "18-cnpg-ext";
           }
           // cnpgImageConfig;
@@ -200,7 +200,7 @@
           # vectordrive is a singularity-ng product; image is namespaced by the
           # product org (matches the cluster + the live registry repo), even
           # though it is built by centralcloud-postgres (a centralcloud-org repo).
-          name = "registry.infra.centralcloud.com/singularity-ng/vectordrive-postgres";
+          name = "registry.centralcloud.net/singularity-ng/vectordrive-postgres";
           tag = "18-cnpg";
           fromImage = cnpgBase;
           inherit arch;
@@ -216,7 +216,7 @@
             Labels = {
               "org.opencontainers.image.title" = "VectorDrive PostgreSQL 18 (CNPG)";
               "org.opencontainers.image.description" = "CNPG PG18 with six VectorDrive-owned SQL extensions plus non-vector shared operations extensions; no VChord, pgvector, AGE, TimescaleDB, or PostGIS";
-              "org.opencontainers.image.source" = "https://git.infra.centralcloud.com/singularity-ng/vectordrive";
+              "org.opencontainers.image.source" = "https://git.centralcloud.net/singularity-ng/vectordrive";
               "org.opencontainers.image.licenses" = "MIT";
               "org.opencontainers.image.base.name" = "ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie";
               "org.centralcloud.postgres.extension-profile" = "vectordrive+shared-ops";

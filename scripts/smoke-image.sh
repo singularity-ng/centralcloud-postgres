@@ -10,7 +10,7 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 push_mode="${1:-0}"
-image="${2:-registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext}"
+image="${2:-registry.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext}"
 
 if [[ "$push_mode" == "0" ]]; then
   nix build --option builders "" "$repo_root#postgresql-18-cnpg-image" --no-link

@@ -80,7 +80,7 @@ push-cnpg-image-vd-mirror:
 
 sbom:
     mkdir -p dist
-    nix shell nixpkgs#syft -c syft registry.infra.centralcloud.com/centralcloud/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
+    nix shell nixpkgs#syft -c syft registry.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext -o spdx-json=dist/sbom.spdx.json
 
 install-hooks:
     lefthook install

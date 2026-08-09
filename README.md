@@ -120,7 +120,7 @@ mirror on every push to `main` and every `v*` tag. Required secrets
 
 | Secret              | Required | Purpose                                                 |
 |---------------------|----------|---------------------------------------------------------|
-| `REGISTRY_USER`     | yes      | Forgejo user with write to `registry.infra.centralcloud.com` |
+| `REGISTRY_USER`     | yes      | Forgejo user with write to `registry.centralcloud.net` |
 | `REGISTRY_PASSWORD` | yes      | That user's PAT or password                             |
 | `GHCR_USER`         | optional | GitHub user with write to `ghcr.io/singularity-ng`      |
 | `GHCR_TOKEN`        | optional | GitHub PAT with `write:packages` scope                  |
