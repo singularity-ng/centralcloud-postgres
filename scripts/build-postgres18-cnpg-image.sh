@@ -20,6 +20,16 @@ nix_build_args=(--accept-flake-config)
 INTERNAL_TAG="registry.centralcloud.net/centralcloud/centralcloud-postgres:18-cnpg-ext"
 GHCR_TAG="ghcr.io/singularity-ng/centralcloud-postgres:18-cnpg-ext"
 
+# Immutable companion tag. 18-cnpg-ext is a moving pointer: every push to main
+# republishes it, so a bad build overwrites the good image in place and the only
+# way back is knowing the previous digest by heart. Publishing an immutable
+# <tag>-<commit> alongside it means a bad overwrite never destroys a known-good
+# image and rollback is a tag lookup. Renovate keeps tracking the floating tag.
+commit_sha="${GITHUB_SHA:-$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)}"
+commit_short="${commit_sha:0:12}"
+INTERNAL_TAG_IMMUTABLE="${INTERNAL_TAG}-${commit_short}"
+GHCR_TAG_IMMUTABLE="${GHCR_TAG}-${commit_short}"
+
 if [[ "$use_remote_builders" != "1" ]]; then
   nix_build_args+=(--option builders "")
 fi
@@ -58,10 +68,21 @@ case "$push_image" in
       nix build "${nix_build_args[@]}" "$repo_root#postgresql-18-cnpg-image.copyToRegistry" --print-out-paths --no-link
     )"
 
+    # Verify the artifact BEFORE it reaches any registry. The old order pushed
+    # first and smoke-tested after, so a broken image was already live by the
+    # time anything looked at it.
+    ./scripts/verify-image-artifact.sh "$image_json"
+
+    # Immutable tag first: if the floating-tag copy fails halfway, the good
+    # image is still addressable.
+    skopeo_copy "$copy_tool" "$image_json" "$INTERNAL_TAG_IMMUTABLE" \
+      "${REGISTRY_USER:-}" "${REGISTRY_PASSWORD:-}"
     skopeo_copy "$copy_tool" "$image_json" "$INTERNAL_TAG" \
       "${REGISTRY_USER:-}" "${REGISTRY_PASSWORD:-}"
 
     if [[ "$push_image" == "both" ]]; then
+      skopeo_copy "$copy_tool" "$image_json" "$GHCR_TAG_IMMUTABLE" \
+        "${GHCR_USER:-}" "${GHCR_TOKEN:-}"
       skopeo_copy "$copy_tool" "$image_json" "$GHCR_TAG" \
         "${GHCR_USER:-}" "${GHCR_TOKEN:-}"
     fi
@@ -74,3 +95,4 @@ esac
 
 ./scripts/smoke-image.sh "${push_image}" "$INTERNAL_TAG"
 echo "$INTERNAL_TAG"
+echo "$INTERNAL_TAG_IMMUTABLE"

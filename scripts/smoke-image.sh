@@ -26,8 +26,24 @@ fi
 inspect_json="$(skopeo inspect "docker://$image")"
 actual_profile="$(jq -r '.Labels["org.centralcloud.postgres.extension-profile"] // ""' <<<"$inspect_json")"
 
-if [[ -n "$actual_profile" && "$actual_profile" != "platform" ]]; then
+# Fail closed. This previously read `-n "$actual_profile" && ...`, so an image
+# with NO labels - exactly what a zero-layer manifest looks like - skipped the
+# comparison and exited 0. That is how a postgres image with no /bin/sh passed
+# this check twice.
+if [[ -z "$actual_profile" ]]; then
+  echo "smoke-image.sh: image carries no extension-profile label at all" >&2
+  echo "smoke-image.sh: refusing to treat an unlabelled image as verified" >&2
+  exit 1
+fi
+
+if [[ "$actual_profile" != "platform" ]]; then
   echo "smoke-image.sh: expected profile=platform, got profile=$actual_profile" >&2
+  exit 1
+fi
+
+layer_count="$(jq -r '(.LayersData // .Layers // []) | length' <<<"$inspect_json")"
+if [[ "${layer_count:-0}" -lt 1 ]]; then
+  echo "smoke-image.sh: published image reports $layer_count layers" >&2
   exit 1
 fi
 
